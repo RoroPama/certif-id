@@ -67,10 +67,7 @@ class ApiClient {
           );
         }
 
-        throw new ApiClientError(
-          500,
-          error.message || MESSAGES.errors.network
-        );
+        throw new ApiClientError(500, error.message || MESSAGES.errors.network);
       }
     );
   }
