@@ -7,7 +7,40 @@ import type {
   SubmittedRequest,
   RequestItem,
   RequestItemStatus,
+  Filiere,
 } from "../types";
+
+export const generateMockFilieres = (): Filiere[] => {
+  return [
+    {
+      id: "f1",
+      name: "Sciences Juridiques et Administratives",
+      diplomas: [
+        { id: "d1", name: "Licence en Droit Public" },
+        { id: "d2", name: "Master en Droit Public" },
+        { id: "d3", name: "Licence en Droit Privé" },
+      ],
+    },
+    {
+      id: "f2",
+      name: "Informatique",
+      diplomas: [
+        { id: "d4", name: "Licence en Informatique" },
+        { id: "d5", name: "Master en Informatique" },
+        { id: "d6", name: "Master en Cybersécurité" },
+      ],
+    },
+    {
+      id: "f3",
+      name: "Sciences Économiques",
+      diplomas: [
+        { id: "d7", name: "Licence en Économie" },
+        { id: "d8", name: "Master en Économie" },
+        { id: "d9", name: "Master en Gestion" },
+      ],
+    },
+  ];
+};
 
 export const generateMockRegistry = (): ApprovedDiploma[] => {
   const names = [

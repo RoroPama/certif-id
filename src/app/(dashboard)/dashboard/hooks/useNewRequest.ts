@@ -16,6 +16,8 @@ export function useNewRequest({ filieres, foundationYear, onSubmitSuccess }: Use
   const [currentEntry, setCurrentEntry] = useState<Partial<StudentDraft>>({
     sex: "M",
     mention: "Passable",
+    pdfFile: null,
+    fileName: "",
   });
 
   const years = useMemo(() => {
@@ -36,12 +38,16 @@ export function useNewRequest({ filieres, foundationYear, onSubmitSuccess }: Use
       !currentEntry.firstName ||
       !currentEntry.lastName ||
       !currentEntry.filiereId ||
+      !currentEntry.diplomaId ||
       !currentEntry.yearId
     ) {
       alert("Veuillez remplir tous les champs obligatoires.");
       return;
     }
+    
     const filiere = filieres.find((f) => f.id === currentEntry.filiereId);
+    const diploma = filiere?.diplomas.find((d) => d.id === currentEntry.diplomaId);
+    
     const newDraft: StudentDraft = {
       id: Math.random().toString(36).substr(2, 9),
       firstName: currentEntry.firstName!,
@@ -49,16 +55,20 @@ export function useNewRequest({ filieres, foundationYear, onSubmitSuccess }: Use
       sex: currentEntry.sex as "M" | "F",
       yearId: currentEntry.yearId!,
       filiereId: currentEntry.filiereId!,
-      diplomaName: filiere ? filiere.diplomaName : "",
+      diplomaId: currentEntry.diplomaId!,
+      diplomaName: diploma ? diploma.name : "",
       mention: currentEntry.mention || "Passable",
-      file: currentEntry.file || null,
+      pdfFile: currentEntry.pdfFile || null,
+      fileName: currentEntry.fileName || "",
     };
     setDraftList([...draftList, newDraft]);
     setCurrentEntry({
-      ...currentEntry,
+      sex: "M",
+      mention: "Passable",
+      pdfFile: null,
+      fileName: "",
       firstName: "",
       lastName: "",
-      file: null,
     });
   };
 
@@ -98,6 +108,7 @@ export function useNewRequest({ filieres, foundationYear, onSubmitSuccess }: Use
     draftList,
     currentEntry,
     years,
+    filieres,
     setCurrentEntry,
     handleAddDraft,
     handleRemoveDraft,

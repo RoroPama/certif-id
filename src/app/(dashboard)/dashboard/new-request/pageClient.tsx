@@ -4,6 +4,7 @@ import React from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Save, FilePlus, X } from "lucide-react";
 import { useNewRequest } from "../hooks/useNewRequest";
+import PdfUploadField from "../components/PdfUploadField";
 import type { Filiere } from "../types";
 
 interface NewRequestPageClientProps {
@@ -81,7 +82,8 @@ export default function NewRequestPageClient({
                   setCurrentEntry({
                     ...currentEntry,
                     filiereId: e.target.value,
-                    diplomaName: selected ? selected.diplomaName : "",
+                    diplomaId: "",
+                    diplomaName: "",
                   });
                 }}
               >
@@ -96,6 +98,37 @@ export default function NewRequestPageClient({
           </div>
 
           <div className="h-px bg-slate-100 w-full"></div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">
+              Intitulé du Diplôme
+            </label>
+            <select
+              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-slate-800 font-medium outline-none"
+              value={currentEntry.diplomaId || ""}
+              onChange={(e) => {
+                const selected = initialFilieres
+                  .find((f) => f.id === currentEntry.filiereId)
+                  ?.diplomas.find((d) => d.id === e.target.value);
+                setCurrentEntry({
+                  ...currentEntry,
+                  diplomaId: e.target.value,
+                  diplomaName: selected ? selected.name : "",
+                });
+              }}
+              disabled={!currentEntry.filiereId}
+            >
+              <option value="">Sélectionner un diplôme...</option>
+              {currentEntry.filiereId &&
+                initialFilieres
+                  .find((f) => f.id === currentEntry.filiereId)
+                  ?.diplomas.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.name}
+                    </option>
+                  ))}
+            </select>
+          </div>
 
           <div className="space-y-6">
             <h4 className="font-serif font-semibold text-slate-800 text-sm">
@@ -167,16 +200,7 @@ export default function NewRequestPageClient({
 
           <div className="h-px bg-slate-100 w-full"></div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="md:col-span-2 space-y-2">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">
-                Intitulé Officiel
-              </label>
-              <div className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-slate-500 font-serif italic">
-                {currentEntry.diplomaName ||
-                  "En attente de sélection de filière..."}
-              </div>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">
                 Mention
@@ -199,6 +223,17 @@ export default function NewRequestPageClient({
               </select>
             </div>
           </div>
+
+          <PdfUploadField
+            fileName={currentEntry.fileName}
+            onFileChange={(file, fileName) => {
+              setCurrentEntry({
+                ...currentEntry,
+                pdfFile: file,
+                fileName: fileName,
+              });
+            }}
+          />
 
           <div className="pt-6 flex justify-end">
             <button
@@ -255,6 +290,11 @@ export default function NewRequestPageClient({
                   <p className="text-xs text-slate-500 mt-2">
                     {draft.diplomaName}
                   </p>
+                  {draft.fileName && (
+                    <p className="text-xs text-green-600 font-medium mt-2">
+                      📄 {draft.fileName}
+                    </p>
+                  )}
                 </div>
               ))
             )}

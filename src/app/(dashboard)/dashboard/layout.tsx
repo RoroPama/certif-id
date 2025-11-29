@@ -26,7 +26,7 @@ export default function DashboardLayout({
 
         <DashboardHeader />
 
-        <div className="pt-20 p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500 relative z-10">
+        <div className="pt-32 px-8 py-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500 relative z-10">
           {children}
         </div>
       </main>

@@ -2,7 +2,9 @@
  * Types partagés pour le dashboard
  */
 
-export type Filiere = { id: string; name: string; diplomaName: string };
+export type DiplomaTitel = { id: string; name: string };
+
+export type Filiere = { id: string; name: string; diplomas: DiplomaTitel[] };
 
 export type AcademicYear = { id: string; label: string; isCurrent: boolean };
 
@@ -13,9 +15,11 @@ export type StudentDraft = {
   sex: "M" | "F";
   yearId: string;
   filiereId: string;
+  diplomaId: string;
   diplomaName: string;
   mention: string;
-  file: File | null;
+  pdfFile: File | null;
+  fileName: string;
 };
 
 export type ApprovedDiploma = {

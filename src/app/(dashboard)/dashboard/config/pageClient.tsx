@@ -1,96 +1,36 @@
 "use client";
 
 import React from "react";
-import { Plus, Trash2, History, AlertCircle } from "lucide-react";
+import { History, AlertCircle } from "lucide-react";
 import { useConfig } from "../hooks/useConfig";
+import FiliereDiplomasManager from "../components/FiliereDiplomasManager";
 
 export default function ConfigPageClient() {
   const {
     filieres,
     foundationYear,
-    newFiliere,
     years,
-    setNewFiliere,
     handleAddFiliere,
+    handleAddDiploma,
+    handleDeleteDiploma,
     handleDeleteFiliere,
     handleFoundationYearChange,
   } = useConfig();
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-        <div className="p-6 border-b border-slate-200 bg-slate-50/50">
-          <h3 className="font-serif font-bold text-lg text-slate-900">
-            Catalogue des Filières
-          </h3>
-          <p className="text-sm text-slate-500 mt-1">
-            Ajoutez les filières et associez les diplômes correspondants.
-          </p>
-        </div>
-        <div className="flex-1 overflow-y-auto max-h-[500px] p-6 space-y-4">
-          {filieres.map((f) => (
-            <div
-              key={f.id}
-              className="group flex items-center justify-between p-4 rounded-lg border border-slate-100 bg-white hover:border-blue-200 hover:shadow-sm transition-all"
-            >
-              <div>
-                <p className="font-bold text-slate-800">{f.name}</p>
-                <p className="text-xs text-blue-800 bg-blue-50 px-2 py-0.5 rounded mt-1 inline-block">
-                  {f.diplomaName}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => handleDeleteFiliere(f.id)}
-                className="text-slate-300 hover:text-rose-500 p-2 hover:bg-rose-50 rounded-lg transition-colors"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-          ))}
-          {filieres.length === 0 && (
-            <p className="text-center text-slate-400 py-4">
-              Aucune filière configurée.
-            </p>
-          )}
-        </div>
-        <div className="p-6 bg-slate-50 border-t border-slate-200 space-y-4">
-          <h4 className="font-bold text-xs text-slate-500 uppercase tracking-wide">
-            Nouvelle Filière
-          </h4>
-          <div className="space-y-3">
-            <input
-              type="text"
-              placeholder="Nom de la filière (ex: Géographie)"
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-900/10 outline-none"
-              value={newFiliere.name}
-              onChange={(e) =>
-                setNewFiliere({ ...newFiliere, name: e.target.value })
-              }
-            />
-            <input
-              type="text"
-              placeholder="Intitulé du diplôme (ex: Licence en Géographie)"
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-900/10 outline-none"
-              value={newFiliere.diplomaName}
-              onChange={(e) =>
-                setNewFiliere({
-                  ...newFiliere,
-                  diplomaName: e.target.value,
-                })
-              }
-            />
-            <button
-              type="button"
-              onClick={handleAddFiliere}
-              className="w-full bg-blue-950 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-900 flex justify-center items-center gap-2"
-            >
-              <Plus className="w-4 h-4" /> Ajouter au catalogue
-            </button>
-          </div>
-        </div>
+      {/* Colonne gauche : Filières et Diplômes */}
+      <div className="space-y-6">
+        <FiliereDiplomasManager
+          filieres={filieres}
+          onAddFiliere={handleAddFiliere}
+          onAddDiploma={handleAddDiploma}
+          onDeleteDiploma={handleDeleteDiploma}
+          onDeleteFiliere={handleDeleteFiliere}
+        />
       </div>
 
+      {/* Colonne droite : Historique Académique */}
       <div className="space-y-8">
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-8">
           <div className="flex items-center gap-4 mb-6">
@@ -134,7 +74,7 @@ export default function ConfigPageClient() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 max-h-[300px] overflow-hidden flex flex-col">
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 max-h-[400px] overflow-hidden flex flex-col">
           <h3 className="font-bold text-slate-800 text-sm mb-4">
             Aperçu des années actives ({years.length})
           </h3>

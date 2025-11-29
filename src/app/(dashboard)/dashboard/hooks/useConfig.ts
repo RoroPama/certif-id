@@ -4,34 +4,19 @@
 
 import { useState, useMemo } from "react";
 import type { Filiere, AcademicYear } from "../types";
+import { generateMockFilieres } from "../utils/mockData";
 
 interface UseConfigProps {
   initialFilieres?: Filiere[];
   initialFoundationYear?: number;
 }
 
-const defaultFilieres: Filiere[] = [
-  { id: "1", name: "Droit Public", diplomaName: "Licence en Droit Public" },
-  {
-    id: "2",
-    name: "Informatique de Gestion",
-    diplomaName: "Master en Informatique Appliquée",
-  },
-  {
-    id: "3",
-    name: "Sciences Économiques",
-    diplomaName: "Licence en Économie du Développement",
-  },
-  { id: "4", name: "Sociologie", diplomaName: "Licence en Sociologie" },
-];
-
 export function useConfig({
-  initialFilieres = defaultFilieres,
+  initialFilieres = generateMockFilieres(),
   initialFoundationYear = 2010,
 }: UseConfigProps = {}) {
   const [filieres, setFilieres] = useState<Filiere[]>(initialFilieres);
   const [foundationYear, setFoundationYear] = useState<number>(initialFoundationYear);
-  const [newFiliere, setNewFiliere] = useState({ name: "", diplomaName: "" });
 
   const years = useMemo(() => {
     const currentYear = new Date().getFullYear();
@@ -46,13 +31,57 @@ export function useConfig({
     return generated;
   }, [foundationYear]);
 
-  const handleAddFiliere = () => {
-    if (!newFiliere.name || !newFiliere.diplomaName) {
-      alert("Veuillez remplir le nom de la filière et l'intitulé du diplôme.");
+  const handleAddFiliere = (filiereName: string) => {
+    if (!filiereName.trim()) {
+      alert("Veuillez entrer un nom de filière.");
       return;
     }
-    setFilieres([...filieres, { id: Date.now().toString(), ...newFiliere }]);
-    setNewFiliere({ name: "", diplomaName: "" });
+    const newFiliere: Filiere = {
+      id: Date.now().toString(),
+      name: filiereName,
+      diplomas: [],
+    };
+    setFilieres([...filieres, newFiliere]);
+  };
+
+  const handleAddDiploma = (filiereId: string, diplomaName: string) => {
+    if (!diplomaName.trim()) {
+      alert("Veuillez entrer un intitulé de diplôme.");
+      return;
+    }
+    setFilieres(
+      filieres.map((f) => {
+        if (f.id === filiereId) {
+          return {
+            ...f,
+            diplomas: [
+              ...f.diplomas,
+              {
+                id: Date.now().toString(),
+                name: diplomaName,
+              },
+            ],
+          };
+        }
+        return f;
+      })
+    );
+  };
+
+  const handleDeleteDiploma = (filiereId: string, diplomaId: string) => {
+    if (confirm("Supprimer cet intitulé de diplôme ?")) {
+      setFilieres(
+        filieres.map((f) => {
+          if (f.id === filiereId) {
+            return {
+              ...f,
+              diplomas: f.diplomas.filter((d) => d.id !== diplomaId),
+            };
+          }
+          return f;
+        })
+      );
+    }
   };
 
   const handleDeleteFiliere = (id: string) => {
@@ -72,10 +101,10 @@ export function useConfig({
   return {
     filieres,
     foundationYear,
-    newFiliere,
     years,
-    setNewFiliere,
     handleAddFiliere,
+    handleAddDiploma,
+    handleDeleteDiploma,
     handleDeleteFiliere,
     handleFoundationYearChange,
   };
