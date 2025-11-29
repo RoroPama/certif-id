@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Smartphone, Shield, ArrowLeft, AlertCircle } from "lucide-react";
 
 interface OTPFormProps {
@@ -14,6 +15,7 @@ export default function OTPForm({
   onOTPSuccess,
   onBackToLogin,
 }: OTPFormProps) {
+  const router = useRouter();
   const [otp, setOtp] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -27,8 +29,9 @@ export default function OTPForm({
       // Code en dur pour la démo
       if (otp === "123456") {
         console.log("Double authentification réussie pour " + email);
-        alert("Connexion sécurisée établie avec succès !");
         onOTPSuccess();
+        // Redirection vers le dashboard
+        router.push("/dashboard");
       } else {
         setError("Code de sécurité incorrect. Veuillez réessayer.");
       }
