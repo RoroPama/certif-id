@@ -1,7 +1,6 @@
 /**
  * Client API HTTP avec Axios
- * Configuré pour intégrer avec NestJS backend
- */
+  */
 
 import axios, { AxiosInstance, AxiosError, AxiosRequestConfig } from "axios";
 import { appConfig } from "../config/appConfig";
