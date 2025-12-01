@@ -30,8 +30,8 @@ export default function OTPForm({
       if (otp === "123456") {
         console.log("Double authentification réussie pour " + email);
         onOTPSuccess();
-        // Redirection vers le dashboard
-        router.push("/dashboard");
+        // Redirection vers le module Institution
+        router.push("/institution");
       } else {
         setError("Code de sécurité incorrect. Veuillez réessayer.");
       }
