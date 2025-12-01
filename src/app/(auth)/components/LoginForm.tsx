@@ -2,12 +2,7 @@
 
 import React, { useState } from "react";
 import { Eye, EyeOff, Lock, Mail, ArrowRight, AlertCircle } from "lucide-react";
-
-// Liste des emails autorisés (établissement + gouvernement)
-const AUTHORIZED_EMAILS = [
-  "abedapipi@gmail.com",     // Établissement
-  "pamarolic@gmail.com",     // Gouvernement
-];
+import { useAuth } from "@/lib/hooks/useAuth";
 
 interface LoginFormProps {
   onLoginSuccess: () => void;
@@ -18,6 +13,7 @@ export default function LoginForm({
   onLoginSuccess,
   onEmailCapture,
 }: LoginFormProps) {
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -29,24 +25,23 @@ export default function LoginForm({
     setError("");
     setIsLoading(true);
 
-    setTimeout(() => {
-      // Vérifier si l'email est autorisé (déclenche l'OTP peu importe le mot de passe)
-      if (AUTHORIZED_EMAILS.includes(email.toLowerCase())) {
+    try {
+      const response = await login({ email, password });
+
+      // Si 2FA est requis, passer à l'étape OTP
+      if (response.requires2FA) {
         onEmailCapture(email.toLowerCase());
         onLoginSuccess();
-        setIsLoading(false);
-        return;
       }
-
-      // Cas démo classique
-      if (email === "demo@universite.cg" && password === "demo123") {
-        console.log("Connexion réussie");
-        alert("Connexion réussie !");
-      } else {
-        setError("Identifiants non reconnus par le système central.");
-      }
+      // Sinon, la redirection est gérée automatiquement par AuthProvider
+    } catch (err: any) {
+      // Gérer les erreurs de l'API
+      const errorMessage =
+        err?.message || "Identifiants non reconnus par le système central.";
+      setError(errorMessage);
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   return (

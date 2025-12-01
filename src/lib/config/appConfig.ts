@@ -1,6 +1,6 @@
 export const appConfig = {
   api: {
-    baseUrl: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api",
+    baseUrl: process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1",
     timeout: 30000,
   },
 

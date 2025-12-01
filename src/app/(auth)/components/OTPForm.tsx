@@ -1,17 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Smartphone, Shield, ArrowLeft, AlertCircle } from "lucide-react";
-import {
-  INSTITUTION_ROUTES,
-  GOVERNMENT_ROUTES,
-  APP_CONFIG,
-} from "@/lib/utils/constants";
+import { useAuth } from "@/lib/hooks/useAuth";
+import { authService } from "@/lib/services/auth.service";
+import { APP_CONFIG } from "@/lib/utils/constants";
 import { MESSAGES } from "@/lib/utils/messages";
-
-// Emails des utilisateurs gouvernementaux
-const GOVERNMENT_EMAILS = ["pamarolic@gmail.com"];
 
 interface OTPFormProps {
   email: string;
@@ -24,37 +18,48 @@ export default function OTPForm({
   onOTPSuccess,
   onBackToLogin,
 }: OTPFormProps) {
-  const router = useRouter();
+  const { verifyOTP } = useAuth();
   const [otp, setOtp] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [resendSuccess, setResendSuccess] = useState(false);
 
   const { otp: otpMessages } = MESSAGES.auth;
 
   const handleOtpSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
+    setResendSuccess(false);
     setIsLoading(true);
 
-    setTimeout(() => {
-      if (otp === "123456") {
-        console.log(otpMessages.success + " pour " + email);
-        onOTPSuccess();
-
-        // Redirection selon le type d'utilisateur
-        const isGovernmentUser = GOVERNMENT_EMAILS.includes(
-          email.toLowerCase()
-        );
-        if (isGovernmentUser) {
-          router.push(GOVERNMENT_ROUTES.ROOT);
-        } else {
-          router.push(INSTITUTION_ROUTES.ROOT);
-        }
-      } else {
-        setError(otpMessages.incorrectCode);
-      }
+    try {
+      await verifyOTP({ email, otp });
+      // La redirection est gérée automatiquement par AuthProvider
+      onOTPSuccess();
+    } catch (err: any) {
+      // Gérer les erreurs de l'API
+      const errorMessage =
+        err?.message || otpMessages.incorrectCode || "Code OTP invalide";
+      setError(errorMessage);
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
+  };
+
+  const handleResendOTP = async () => {
+    setError("");
+    setResendSuccess(false);
+    setIsLoading(true);
+
+    try {
+      await authService.resendOTP(email);
+      setResendSuccess(true);
+      setTimeout(() => setResendSuccess(false), 3000);
+    } catch (err: any) {
+      setError(err?.message || "Erreur lors de l'envoi du code OTP");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -80,6 +85,17 @@ export default function OTPForm({
               {MESSAGES.errors.generic.split(" ")[0]}
             </span>
             <span className="text-red-700/80">{error}</span>
+          </div>
+        </div>
+      )}
+
+      {resendSuccess && (
+        <div className="mb-6 bg-green-50/80 backdrop-blur border border-green-100 text-green-800 px-4 py-3 rounded-md text-sm flex items-start gap-3 animate-in fade-in slide-in-from-top-1">
+          <div>
+            <span className="font-semibold block">Succès</span>
+            <span className="text-green-700/80">
+              Code OTP renvoyé avec succès. Vérifiez votre email.
+            </span>
           </div>
         </div>
       )}
@@ -111,9 +127,14 @@ export default function OTPForm({
           </div>
           <p className="text-xs text-center text-slate-400 mt-2">
             {otpMessages.codeExpiry}{" "}
-            <a href="#" className="text-blue-900 hover:underline">
+            <button
+              type="button"
+              onClick={handleResendOTP}
+              disabled={isLoading}
+              className="text-blue-900 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               {otpMessages.resendCode}
-            </a>
+            </button>
           </p>
         </div>
 
