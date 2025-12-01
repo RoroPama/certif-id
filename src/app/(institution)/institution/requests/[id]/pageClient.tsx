@@ -3,6 +3,8 @@
 import React from "react";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2, Clock, Ban } from "lucide-react";
+import { INSTITUTION_ROUTES, REQUEST_STATUS } from "@/lib/utils/constants";
+import { MESSAGES } from "@/lib/utils/messages";
 import type { SubmittedRequest } from "../../types";
 
 interface RequestDetailPageClientProps {
@@ -12,22 +14,25 @@ interface RequestDetailPageClientProps {
 export default function RequestDetailPageClient({
   request,
 }: RequestDetailPageClientProps) {
+  const { requestDetail } = MESSAGES.institution.pages;
+  const { status } = MESSAGES;
+
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col min-h-[600px] animate-in slide-in-from-right-4 fade-in duration-300">
       <div className="p-6 border-b border-slate-200 bg-slate-50/50 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link
-            href="/institution/requests"
+            href={INSTITUTION_ROUTES.REQUESTS}
             className="p-2 hover:bg-white rounded-lg border border-transparent hover:border-slate-200 text-slate-500 transition-all"
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
             <h3 className="font-serif font-bold text-lg text-slate-900">
-              Détail du Bordereau {request.reference}
+              {requestDetail.bordereau} {request.reference}
             </h3>
             <p className="text-sm text-slate-500">
-              {request.items.length} étudiants • Soumis le{" "}
+              {request.items.length} {requestDetail.students} • {requestDetail.submittedOn}{" "}
               {request.submissionDate}
             </p>
           </div>
@@ -35,7 +40,7 @@ export default function RequestDetailPageClient({
         <div className="flex gap-2">
           <div className="px-4 py-2 bg-white border border-slate-200 rounded-lg shadow-sm flex flex-col items-center">
             <span className="text-[10px] text-slate-400 font-bold uppercase">
-              Validés
+              {requestDetail.validated}
             </span>
             <span className="text-lg font-bold text-emerald-600 leading-none">
               {request.approvedCount}
@@ -43,7 +48,7 @@ export default function RequestDetailPageClient({
           </div>
           <div className="px-4 py-2 bg-white border border-slate-200 rounded-lg shadow-sm flex flex-col items-center">
             <span className="text-[10px] text-slate-400 font-bold uppercase">
-              Rejetés
+              {requestDetail.rejected}
             </span>
             <span className="text-lg font-bold text-rose-600 leading-none">
               {request.rejectedCount}
@@ -56,10 +61,10 @@ export default function RequestDetailPageClient({
         <table className="w-full text-sm">
           <thead className="text-slate-500 font-bold uppercase tracking-wider text-xs border-b border-slate-100">
             <tr>
-              <th className="px-4 py-3 text-left">Étudiant</th>
-              <th className="px-4 py-3 text-left">Diplôme Demandé</th>
-              <th className="px-4 py-3 text-left">Statut</th>
-              <th className="px-4 py-3 text-left">Observation</th>
+              <th className="px-4 py-3 text-left">{requestDetail.columns.student}</th>
+              <th className="px-4 py-3 text-left">{requestDetail.columns.diploma}</th>
+              <th className="px-4 py-3 text-left">{requestDetail.columns.status}</th>
+              <th className="px-4 py-3 text-left">{requestDetail.columns.observation}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
@@ -70,24 +75,24 @@ export default function RequestDetailPageClient({
                 </td>
                 <td className="px-4 py-3 text-slate-600">{item.diplomaName}</td>
                 <td className="px-4 py-3">
-                  {item.status === "APPROVED" && (
+                  {item.status === REQUEST_STATUS.APPROVED && (
                     <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">
-                      <CheckCircle2 className="w-3 h-3" /> Validé
+                      <CheckCircle2 className="w-3 h-3" /> {status.approved}
                     </span>
                   )}
-                  {item.status === "PENDING" && (
+                  {item.status === REQUEST_STATUS.PENDING && (
                     <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200">
-                      <Clock className="w-3 h-3" /> En attente
+                      <Clock className="w-3 h-3" /> {status.pending}
                     </span>
                   )}
-                  {item.status === "REJECTED" && (
+                  {item.status === REQUEST_STATUS.REJECTED && (
                     <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-bold bg-rose-50 text-rose-700 border border-rose-100">
-                      <Ban className="w-3 h-3" /> Rejeté
+                      <Ban className="w-3 h-3" /> {status.rejected}
                     </span>
                   )}
                 </td>
                 <td className="px-4 py-3">
-                  {item.status === "REJECTED" ? (
+                  {item.status === REQUEST_STATUS.REJECTED ? (
                     <span className="text-rose-600 text-xs font-medium">
                       {item.rejectionReason}
                     </span>
@@ -103,4 +108,3 @@ export default function RequestDetailPageClient({
     </div>
   );
 }
-

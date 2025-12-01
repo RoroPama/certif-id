@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 import { useRequests } from "../hooks/useRequests";
 import PaginationControls from "../components/PaginationControls";
+import { INSTITUTION_ROUTES } from "@/lib/utils/constants";
+import { MESSAGES } from "@/lib/utils/messages";
 import type { SubmittedRequest } from "../types";
 
 interface RequestsPageClientProps {
@@ -29,11 +31,14 @@ export default function RequestsPageClient({
     handlePageChange,
   } = useRequests({ initialData: initialHistoryData });
 
+  const { requests } = MESSAGES.institution.pages;
+  const { status } = MESSAGES;
+
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col min-h-[600px]">
       <div className="p-6 border-b border-slate-200 flex flex-col md:flex-row gap-4 justify-between items-center bg-slate-50/50">
         <h3 className="font-serif font-bold text-lg text-slate-900">
-          Suivi des Transmissions
+          {requests.tableTitle}
         </h3>
         <div className="flex gap-2">
           <select
@@ -41,9 +46,9 @@ export default function RequestsPageClient({
             value={historyFilterType}
             onChange={(e) => handleFilterChange(e.target.value)}
           >
-            <option value="all">Tout l'historique</option>
-            <option value="attention">Attention requise (Rejets)</option>
-            <option value="completed">100% Validés</option>
+            <option value="all">{requests.filters.all}</option>
+            <option value="attention">{requests.filters.attention}</option>
+            <option value="completed">{requests.filters.completed}</option>
           </select>
         </div>
       </div>
@@ -52,11 +57,11 @@ export default function RequestsPageClient({
         <table className="w-full text-sm">
           <thead className="bg-white text-slate-500 font-bold uppercase tracking-wider text-xs border-b border-slate-200">
             <tr>
-              <th className="px-6 py-4 text-left">Référence</th>
-              <th className="px-6 py-4 text-left">Date</th>
-              <th className="px-6 py-4 text-left">Synthèse</th>
-              <th className="px-6 py-4 text-left">Statut Global</th>
-              <th className="px-6 py-4 text-right">Détails</th>
+              <th className="px-6 py-4 text-left">{requests.columns.reference}</th>
+              <th className="px-6 py-4 text-left">{requests.columns.date}</th>
+              <th className="px-6 py-4 text-left">{requests.columns.summary}</th>
+              <th className="px-6 py-4 text-left">{requests.columns.status}</th>
+              <th className="px-6 py-4 text-right">{requests.columns.details}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -91,21 +96,21 @@ export default function RequestsPageClient({
                 <td className="px-6 py-4">
                   {req.rejectedCount > 0 ? (
                     <span className="text-xs font-bold text-amber-600 flex items-center gap-1">
-                      <AlertTriangle className="w-3 h-3" /> Attention requise
+                      <AlertTriangle className="w-3 h-3" /> {status.attentionRequired}
                     </span>
                   ) : req.pendingCount > 0 ? (
                     <span className="text-xs font-bold text-blue-600 flex items-center gap-1">
-                      <Clock className="w-3 h-3" /> En traitement
+                      <Clock className="w-3 h-3" /> {status.processing}
                     </span>
                   ) : (
                     <span className="text-xs font-bold text-emerald-600 flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3" /> Finalisé
+                      <CheckCircle2 className="w-3 h-3" /> {status.finalized}
                     </span>
                   )}
                 </td>
                 <td className="px-6 py-4 text-right">
                   <Link
-                    href={`/institution/requests/${req.id}`}
+                    href={INSTITUTION_ROUTES.REQUEST_DETAIL(req.id)}
                     className="text-blue-900 hover:bg-blue-100 p-2 rounded-full transition-colors inline-flex"
                   >
                     <ChevronRight className="w-4 h-4" />
@@ -124,4 +129,3 @@ export default function RequestsPageClient({
     </div>
   );
 }
-

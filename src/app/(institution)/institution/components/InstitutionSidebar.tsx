@@ -15,6 +15,8 @@ import {
   Award,
   FileClock,
 } from "lucide-react";
+import { INSTITUTION_ROUTES, APP_CONFIG } from "@/lib/utils/constants";
+import { MESSAGES } from "@/lib/utils/messages";
 
 interface SidebarItemProps {
   href: string;
@@ -49,14 +51,53 @@ const SidebarItem = ({ href, icon: Icon, label, active }: SidebarItemProps) => (
 
 export default function InstitutionSidebar() {
   const pathname = usePathname();
-  const universityName = "Université Marien Ngouabi";
+  const universityName = "Université Marien Ngouabi"; // TODO: Get from user context
+
+  const { sidebar, pages } = MESSAGES.institution;
 
   const isActive = (href: string) => {
-    if (href === "/institution/overview") {
-      return pathname === "/institution/overview" || pathname === "/institution";
+    if (href === INSTITUTION_ROUTES.OVERVIEW) {
+      return pathname === INSTITUTION_ROUTES.OVERVIEW || pathname === INSTITUTION_ROUTES.ROOT;
     }
     return pathname.startsWith(href);
   };
+
+  // Configuration du menu
+  const pilotageMenu = [
+    {
+      href: INSTITUTION_ROUTES.OVERVIEW,
+      icon: LayoutDashboard,
+      label: sidebar.menu.overview,
+    },
+    {
+      href: INSTITUTION_ROUTES.REQUESTS,
+      icon: FileClock,
+      label: sidebar.menu.requests,
+    },
+    {
+      href: INSTITUTION_ROUTES.REGISTRY,
+      icon: Scroll,
+      label: sidebar.menu.registry,
+    },
+  ];
+
+  const administrationMenu = [
+    {
+      href: INSTITUTION_ROUTES.NEW_REQUEST,
+      icon: FilePlus,
+      label: sidebar.menu.newRequest,
+    },
+    {
+      href: INSTITUTION_ROUTES.CONFIG,
+      icon: Settings,
+      label: sidebar.menu.config,
+    },
+    {
+      href: INSTITUTION_ROUTES.INSTITUTION_PROFILE,
+      icon: Building2,
+      label: sidebar.menu.institutionProfile,
+    },
+  ];
 
   return (
     <aside className="w-72 bg-blue-950 text-slate-300 flex flex-col fixed h-full z-30 shadow-[4px_0_24px_rgba(0,0,0,0.2)] border-r border-white/5">
@@ -72,62 +113,47 @@ export default function InstitutionSidebar() {
           </div>
           <div className="mt-2">
             <h1 className="font-serif font-bold text-white text-xl tracking-tight leading-none">
-              CERTIF-ID
+              {APP_CONFIG.NAME}
             </h1>
             <p className="text-[10px] uppercase tracking-[0.2em] text-amber-500 font-bold mt-1.5 border-t border-white/10 pt-1.5 inline-block">
-              République du Congo
+              {APP_CONFIG.COUNTRY}
             </p>
           </div>
         </div>
       </div>
 
       <nav className="flex-1 py-4 space-y-1 overflow-y-auto custom-scrollbar">
+        {/* Section Pilotage */}
         <div className="px-6 py-3">
           <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-            Pilotage
+            {sidebar.sections.pilotage}
           </p>
         </div>
-        <SidebarItem
-          href="/institution/overview"
-          icon={LayoutDashboard}
-          label="Tableau de bord"
-          active={isActive("/institution/overview")}
-        />
-        <SidebarItem
-          href="/institution/requests"
-          icon={FileClock}
-          label="Suivi des demandes"
-          active={isActive("/institution/requests")}
-        />
-        <SidebarItem
-          href="/institution/registry"
-          icon={Scroll}
-          label="Registre des diplômes"
-          active={isActive("/institution/registry")}
-        />
+        {pilotageMenu.map((item) => (
+          <SidebarItem
+            key={item.href}
+            href={item.href}
+            icon={item.icon}
+            label={item.label}
+            active={isActive(item.href)}
+          />
+        ))}
+
+        {/* Section Administration */}
         <div className="px-6 py-3 mt-4">
           <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-            Administration
+            {sidebar.sections.administration}
           </p>
         </div>
-        <SidebarItem
-          href="/institution/new-request"
-          icon={FilePlus}
-          label="Émettre un diplôme"
-          active={isActive("/institution/new-request")}
-        />
-        <SidebarItem
-          href="/institution/config"
-          icon={Settings}
-          label="Paramètres académiques"
-          active={isActive("/institution/config")}
-        />
-        <SidebarItem
-          href="/institution/institution"
-          icon={Building2}
-          label="Fiche institutionnelle"
-          active={isActive("/institution/institution")}
-        />
+        {administrationMenu.map((item) => (
+          <SidebarItem
+            key={item.href}
+            href={item.href}
+            icon={item.icon}
+            label={item.label}
+            active={isActive(item.href)}
+          />
+        ))}
       </nav>
 
       <div className="p-4 border-t border-white/10 bg-blue-950/50">
@@ -140,13 +166,13 @@ export default function InstitutionSidebar() {
               {universityName}
             </p>
             <p className="text-[10px] text-amber-400/80 truncate">
-              Compte certifié
+              {sidebar.accountStatus}
             </p>
           </div>
         </div>
         <button className="flex items-center justify-center gap-2 text-xs text-rose-300 hover:text-white hover:bg-rose-900/30 transition-colors w-full py-2 rounded border border-transparent hover:border-rose-900/50">
           <LogOut className="w-3.5 h-3.5" />
-          Déconnexion sécurisée
+          {MESSAGES.auth.logout.button}
         </button>
       </div>
     </aside>

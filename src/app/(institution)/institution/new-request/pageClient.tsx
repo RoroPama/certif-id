@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { Plus, Save, FilePlus, X } from "lucide-react";
 import { useNewRequest } from "../hooks/useNewRequest";
 import PdfUploadField from "../components/PdfUploadField";
+import { INSTITUTION_ROUTES, ACADEMIC_MENTIONS } from "@/lib/utils/constants";
+import { MESSAGES } from "@/lib/utils/messages";
 import type { Filiere } from "../types";
 
 interface NewRequestPageClientProps {
@@ -31,16 +33,18 @@ export default function NewRequestPageClient({
     foundationYear,
     onSubmitSuccess: () => {
       // Rediriger vers la page des demandes après soumission
-      router.push("/institution/requests");
+      router.push(INSTITUTION_ROUTES.REQUESTS);
     },
   });
+
+  const { newRequest } = MESSAGES.institution.pages;
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 items-start">
       <div className="xl:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="bg-slate-50/50 border-b border-slate-100 p-6">
           <h3 className="font-serif font-bold text-lg text-slate-900">
-            Saisie des informations
+            {newRequest.formTitle}
           </h3>
         </div>
 
@@ -48,7 +52,7 @@ export default function NewRequestPageClient({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">
-                Année Académique
+                {newRequest.fields.academicYear}
               </label>
               <select
                 className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-slate-800 font-medium outline-none"
@@ -60,7 +64,7 @@ export default function NewRequestPageClient({
                   })
                 }
               >
-                <option value="">Sélectionner...</option>
+                <option value="">{newRequest.placeholders.select}</option>
                 {years.map((y) => (
                   <option key={y.id} value={y.id}>
                     {y.label}
@@ -70,15 +74,12 @@ export default function NewRequestPageClient({
             </div>
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">
-                Filière
+                {newRequest.fields.filiere}
               </label>
               <select
                 className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-slate-800 font-medium outline-none"
                 value={currentEntry.filiereId || ""}
                 onChange={(e) => {
-                  const selected = initialFilieres.find(
-                    (f) => f.id === e.target.value
-                  );
                   setCurrentEntry({
                     ...currentEntry,
                     filiereId: e.target.value,
@@ -87,7 +88,7 @@ export default function NewRequestPageClient({
                   });
                 }}
               >
-                <option value="">Sélectionner...</option>
+                <option value="">{newRequest.placeholders.select}</option>
                 {initialFilieres.map((f) => (
                   <option key={f.id} value={f.id}>
                     {f.name}
@@ -101,7 +102,7 @@ export default function NewRequestPageClient({
 
           <div className="space-y-2">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">
-              Intitulé du Diplôme
+              {newRequest.fields.diplomaTitle}
             </label>
             <select
               className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-slate-800 font-medium outline-none"
@@ -118,7 +119,7 @@ export default function NewRequestPageClient({
               }}
               disabled={!currentEntry.filiereId}
             >
-              <option value="">Sélectionner un diplôme...</option>
+              <option value="">{newRequest.placeholders.selectDiploma}</option>
               {currentEntry.filiereId &&
                 initialFilieres
                   .find((f) => f.id === currentEntry.filiereId)
@@ -132,17 +133,17 @@ export default function NewRequestPageClient({
 
           <div className="space-y-6">
             <h4 className="font-serif font-semibold text-slate-800 text-sm">
-              Identité du Récipiendaire
+              {newRequest.fields.recipientIdentity}
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
               <div className="md:col-span-5 space-y-2">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">
-                  Nom
+                  {newRequest.fields.lastName}
                 </label>
                 <input
                   type="text"
                   className="w-full bg-white border border-slate-200 rounded-lg px-4 py-3 text-slate-800 outline-none"
-                  placeholder="EX: MABIALA"
+                  placeholder={newRequest.placeholders.lastName}
                   value={currentEntry.firstName || ""}
                   onChange={(e) =>
                     setCurrentEntry({
@@ -154,12 +155,12 @@ export default function NewRequestPageClient({
               </div>
               <div className="md:col-span-5 space-y-2">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">
-                  Prénoms
+                  {newRequest.fields.firstName}
                 </label>
                 <input
                   type="text"
                   className="w-full bg-white border border-slate-200 rounded-lg px-4 py-3 text-slate-800 outline-none"
-                  placeholder="Ex: Jean"
+                  placeholder={newRequest.placeholders.firstName}
                   value={currentEntry.lastName || ""}
                   onChange={(e) =>
                     setCurrentEntry({
@@ -171,7 +172,7 @@ export default function NewRequestPageClient({
               </div>
               <div className="md:col-span-2 space-y-2">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">
-                  Sexe
+                  {newRequest.fields.sex}
                 </label>
                 <div className="flex items-center gap-2">
                   {["M", "F"].map((g) => (
@@ -203,11 +204,11 @@ export default function NewRequestPageClient({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">
-                Mention
+                {newRequest.fields.mention}
               </label>
               <select
                 className="w-full bg-white border border-slate-200 rounded-lg px-4 py-3 text-slate-800 outline-none"
-                value={currentEntry.mention || "Passable"}
+                value={currentEntry.mention || ACADEMIC_MENTIONS[0]}
                 onChange={(e) =>
                   setCurrentEntry({
                     ...currentEntry,
@@ -215,11 +216,11 @@ export default function NewRequestPageClient({
                   })
                 }
               >
-                <option value="Passable">Passable</option>
-                <option value="Assez Bien">Assez Bien</option>
-                <option value="Bien">Bien</option>
-                <option value="Très Bien">Très Bien</option>
-                <option value="Excellent">Excellent</option>
+                {ACADEMIC_MENTIONS.map((mention) => (
+                  <option key={mention} value={mention}>
+                    {mention}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -242,7 +243,7 @@ export default function NewRequestPageClient({
               className="bg-blue-950 text-white px-8 py-3.5 rounded-lg hover:bg-blue-900 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center gap-2 font-semibold"
             >
               <Plus className="w-5 h-5 text-amber-500" />
-              Ajouter au Bordereau
+              {newRequest.bordereau.addButton}
             </button>
           </div>
         </div>
@@ -253,7 +254,7 @@ export default function NewRequestPageClient({
           <div className="p-6 bg-blue-950 text-white relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 blur-2xl rounded-full pointer-events-none"></div>
             <div className="flex justify-between items-center mb-1 relative z-10">
-              <h3 className="font-serif font-bold text-lg">Votre Bordereau</h3>
+              <h3 className="font-serif font-bold text-lg">{newRequest.bordereau.title}</h3>
               <span className="bg-amber-500 text-blue-950 px-2 py-0.5 rounded text-xs font-bold">
                 {draftList.length}
               </span>
@@ -264,7 +265,7 @@ export default function NewRequestPageClient({
             {draftList.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-slate-400 py-12">
                 <FilePlus className="w-12 h-12 opacity-20 mb-2" />
-                <p className="text-sm font-medium">Bordereau vide</p>
+                <p className="text-sm font-medium">{newRequest.bordereau.empty}</p>
               </div>
             ) : (
               draftList.map((draft) => (
@@ -308,7 +309,7 @@ export default function NewRequestPageClient({
               className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3.5 rounded-lg shadow-lg shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex justify-center items-center gap-2"
             >
               <Save className="w-5 h-5" />
-              Soumettre ({draftList.length})
+              {newRequest.bordereau.submitButton} ({draftList.length})
             </button>
           </div>
         </div>
@@ -316,4 +317,3 @@ export default function NewRequestPageClient({
     </div>
   );
 }
-

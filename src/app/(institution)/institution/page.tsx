@@ -3,7 +3,8 @@
  */
 
 import { redirect } from "next/navigation";
+import { INSTITUTION_ROUTES } from "@/lib/utils/constants";
 
 export default function InstitutionPage() {
-  redirect("/institution/overview");
+  redirect(INSTITUTION_ROUTES.OVERVIEW);
 }

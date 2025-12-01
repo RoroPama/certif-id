@@ -2,6 +2,7 @@
 
 import React from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { MESSAGES } from "@/lib/utils/messages";
 
 interface PaginationControlsProps {
   currentPage: number;
@@ -14,6 +15,8 @@ export default function PaginationControls({
   totalPages,
   onPageChange,
 }: PaginationControlsProps) {
+  const { pagination } = MESSAGES;
+
   return (
     <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200 bg-white">
       <div className="flex-1 flex justify-between sm:hidden">
@@ -22,20 +25,20 @@ export default function PaginationControls({
           disabled={currentPage === 1}
           className="relative inline-flex items-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-50"
         >
-          Précédent
+          {pagination.previous}
         </button>
         <button
           onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
           disabled={currentPage === totalPages}
           className="ml-3 relative inline-flex items-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-50"
         >
-          Suivant
+          {pagination.next}
         </button>
       </div>
       <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
         <div>
           <p className="text-sm text-slate-700">
-            Page <span className="font-medium">{currentPage}</span> sur{" "}
+            {pagination.page} <span className="font-medium">{currentPage}</span> {pagination.of}{" "}
             <span className="font-medium">{totalPages}</span>
           </p>
         </div>
@@ -64,4 +67,3 @@ export default function PaginationControls({
     </div>
   );
 }
-

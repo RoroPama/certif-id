@@ -14,6 +14,8 @@ import {
   Search,
 } from "lucide-react";
 import { useOverview } from "../hooks/useOverview";
+import { INSTITUTION_ROUTES } from "@/lib/utils/constants";
+import { MESSAGES } from "@/lib/utils/messages";
 import type { ApprovedDiploma, SubmittedRequest, Filiere } from "../types";
 
 interface OverviewPageClientProps {
@@ -33,27 +35,30 @@ export default function OverviewPageClient({
     filieres: initialFilieres,
   });
 
+  const { stats: statsLabels, activity, quickActions } = MESSAGES.institution;
+  const { status } = MESSAGES;
+
   return (
     <>
       {/* Cartes Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {[
           {
-            title: "Diplômes Certifiés",
+            title: statsLabels.certifiedDiplomas,
             value: stats.totalCertified,
             trend: "+12%",
             color: "blue",
             icon: Award,
           },
           {
-            title: "Demandes en Cours",
+            title: statsLabels.pendingRequests,
             value: stats.pendingRequests,
-            trend: "Étudiants en attente",
+            trend: statsLabels.studentsWaiting,
             color: "amber",
             icon: Clock,
           },
           {
-            title: "Filières Actives",
+            title: statsLabels.activeFilieres,
             value: stats.activeFilieres,
             trend: "Année 2023-24",
             color: "emerald",
@@ -98,20 +103,20 @@ export default function OverviewPageClient({
         <div className="lg:col-span-2 bg-white rounded-xl border border-slate-100 shadow-sm p-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="font-serif font-bold text-slate-800 text-lg">
-              Activité Récente
+              {activity.title}
             </h3>
             <Link
-              href="/institution/requests"
+              href={INSTITUTION_ROUTES.REQUESTS}
               className="text-sm text-blue-900 font-medium hover:underline flex items-center gap-1"
             >
-              Tout voir <ChevronRight className="w-3 h-3" />
+              {activity.viewAll} <ChevronRight className="w-3 h-3" />
             </Link>
           </div>
           <div className="space-y-3">
             {recentActivity.map((req) => (
               <Link
                 key={req.id}
-                href={`/institution/requests/${req.id}`}
+                href={INSTITUTION_ROUTES.REQUEST_DETAIL(req.id)}
                 className="flex items-center justify-between p-4 rounded-lg bg-slate-50 border border-slate-100 hover:border-blue-200 transition-colors group"
               >
                 <div className="flex items-center gap-4">
@@ -120,24 +125,24 @@ export default function OverviewPageClient({
                   </div>
                   <div>
                     <p className="text-sm font-bold text-slate-900 font-serif">
-                      Demande {req.reference}
+                      {activity.request} {req.reference}
                     </p>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      {req.submissionDate} • {req.totalCount} diplômes
+                      {req.submissionDate} • {req.totalCount} {activity.diplomas}
                     </p>
                   </div>
                 </div>
                 {req.rejectedCount > 0 ? (
                   <span className="text-xs font-bold text-amber-600 flex items-center gap-1 bg-amber-50 px-2 py-1 rounded">
-                    <AlertTriangle className="w-3 h-3" /> Rejets
+                    <AlertTriangle className="w-3 h-3" /> {MESSAGES.common.rejections}
                   </span>
                 ) : req.pendingCount > 0 ? (
                   <span className="text-xs font-bold text-blue-600 flex items-center gap-1 bg-blue-50 px-2 py-1 rounded">
-                    <Clock className="w-3 h-3" /> En cours
+                    <Clock className="w-3 h-3" /> {status.inProgress}
                   </span>
                 ) : (
                   <span className="text-xs font-bold text-emerald-600 flex items-center gap-1 bg-emerald-50 px-2 py-1 rounded">
-                    <CheckCircle2 className="w-3 h-3" /> Validé
+                    <CheckCircle2 className="w-3 h-3" /> {status.approved}
                   </span>
                 )}
               </Link>
@@ -148,29 +153,29 @@ export default function OverviewPageClient({
         <div className="bg-gradient-to-br from-blue-950 via-blue-900 to-blue-950 rounded-xl p-6 text-white shadow-xl shadow-blue-900/20 relative overflow-hidden border border-white/10">
           <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 blur-[80px] rounded-full pointer-events-none"></div>
           <h3 className="font-serif font-bold text-xl mb-1 relative z-10">
-            Espace Rapide
+            {quickActions.title}
           </h3>
           <p className="text-blue-200/80 text-sm mb-8 relative z-10">
-            Accès direct aux fonctions clés
+            {quickActions.description}
           </p>
           <div className="space-y-3 relative z-10">
             <Link
-              href="/institution/new-request"
+              href={INSTITUTION_ROUTES.NEW_REQUEST}
               className="w-full bg-white/5 hover:bg-white/10 border border-white/10 hover:border-amber-500/50 rounded-lg p-3 flex items-center gap-3 transition-all group"
             >
               <div className="bg-amber-500/20 p-1.5 rounded text-amber-400 group-hover:text-amber-300">
                 <FilePlus className="w-4 h-4" />
               </div>
-              <span className="text-sm font-medium">Nouvelle Demande</span>
+              <span className="text-sm font-medium">{quickActions.newRequest}</span>
             </Link>
             <Link
-              href="/institution/registry"
+              href={INSTITUTION_ROUTES.REGISTRY}
               className="w-full bg-white/5 hover:bg-white/10 border border-white/10 hover:border-amber-500/50 rounded-lg p-3 flex items-center gap-3 transition-all group"
             >
               <div className="bg-amber-500/20 p-1.5 rounded text-amber-400 group-hover:text-amber-300">
                 <Search className="w-4 h-4" />
               </div>
-              <span className="text-sm font-medium">Rechercher un Titre</span>
+              <span className="text-sm font-medium">{quickActions.searchTitle}</span>
             </Link>
           </div>
         </div>
@@ -178,4 +183,3 @@ export default function OverviewPageClient({
     </>
   );
 }
-
