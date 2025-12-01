@@ -3,6 +3,12 @@
 import React, { useState } from "react";
 import { Eye, EyeOff, Lock, Mail, ArrowRight, AlertCircle } from "lucide-react";
 
+// Liste des emails autorisés (établissement + gouvernement)
+const AUTHORIZED_EMAILS = [
+  "abedapipi@gmail.com",     // Établissement
+  "pamarolic@gmail.com",     // Gouvernement
+];
+
 interface LoginFormProps {
   onLoginSuccess: () => void;
   onEmailCapture: (email: string) => void;
@@ -24,9 +30,9 @@ export default function LoginForm({
     setIsLoading(true);
 
     setTimeout(() => {
-      // Cas spécifique : abedapipi@gmail.com déclenche l'OTP peu importe le mot de passe
-      if (email === "abedapipi@gmail.com") {
-        onEmailCapture(email);
+      // Vérifier si l'email est autorisé (déclenche l'OTP peu importe le mot de passe)
+      if (AUTHORIZED_EMAILS.includes(email.toLowerCase())) {
+        onEmailCapture(email.toLowerCase());
         onLoginSuccess();
         setIsLoading(false);
         return;

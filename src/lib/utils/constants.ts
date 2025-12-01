@@ -36,11 +36,12 @@ export const INSTITUTION_ROUTES = {
 export const GOVERNMENT_ROUTES = {
   ROOT: "/government",
   OVERVIEW: "/government/overview",
+  UNIVERSITIES: "/government/universities",
+  UNIVERSITY_DETAIL: (id: string) => `/government/universities/${id}`,
   CERTIFICATIONS: "/government/certifications",
   CERTIFICATION_DETAIL: (id: string) => `/government/certifications/${id}`,
   REGISTRY: "/government/registry",
   REGISTRY_DETAIL: (id: string) => `/government/registry/${id}`,
-  STATISTICS: "/government/statistics",
   CONFIG: "/government/config",
 } as const;
 

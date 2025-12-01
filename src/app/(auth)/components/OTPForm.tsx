@@ -3,8 +3,15 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Smartphone, Shield, ArrowLeft, AlertCircle } from "lucide-react";
-import { INSTITUTION_ROUTES, APP_CONFIG } from "@/lib/utils/constants";
+import {
+  INSTITUTION_ROUTES,
+  GOVERNMENT_ROUTES,
+  APP_CONFIG,
+} from "@/lib/utils/constants";
 import { MESSAGES } from "@/lib/utils/messages";
+
+// Emails des utilisateurs gouvernementaux
+const GOVERNMENT_EMAILS = ["pamarolic@gmail.com"];
 
 interface OTPFormProps {
   email: string;
@@ -33,7 +40,16 @@ export default function OTPForm({
       if (otp === "123456") {
         console.log(otpMessages.success + " pour " + email);
         onOTPSuccess();
-        router.push(INSTITUTION_ROUTES.ROOT);
+
+        // Redirection selon le type d'utilisateur
+        const isGovernmentUser = GOVERNMENT_EMAILS.includes(
+          email.toLowerCase()
+        );
+        if (isGovernmentUser) {
+          router.push(GOVERNMENT_ROUTES.ROOT);
+        } else {
+          router.push(INSTITUTION_ROUTES.ROOT);
+        }
       } else {
         setError(otpMessages.incorrectCode);
       }
