@@ -17,4 +17,11 @@ export const API_ENDPOINTS = {
     DISABLE_2FA: "/auth/disable-2fa",
     RESEND_OTP: "/auth/resend-otp",
   },
+  // Requests (Demandes)
+  REQUESTS: {
+    GET_ALL: "/etablissement/demandes",
+    GET_BY_ID: (id: string) => `/etablissement/demandes/${id}`,
+    GET_DOCUMENT_BY_ID: (demandeId: string, documentId: string) =>
+      `/etablissement/demandes/${demandeId}/documents/${documentId}`,
+  },
 } as const;

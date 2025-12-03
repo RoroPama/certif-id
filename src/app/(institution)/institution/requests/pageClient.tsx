@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useRequests } from "../hooks/useRequests";
 import PaginationControls from "../components/PaginationControls";
+import EmptyState from "../components/EmptyState";
 import { INSTITUTION_ROUTES } from "@/lib/utils/constants";
 import { MESSAGES } from "@/lib/utils/messages";
 import type { SubmittedRequest } from "../types";
@@ -33,6 +34,23 @@ export default function RequestsPageClient({
 
   const { requests } = MESSAGES.institution.pages;
   const { status } = MESSAGES;
+
+  // Afficher l'état vide si aucune donnée
+  if (paginatedHistory.length === 0) {
+    return (
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col min-h-[600px]">
+        <div className="p-6 border-b border-slate-200 flex flex-col md:flex-row gap-4 justify-between items-center bg-slate-50/50">
+          <h3 className="font-serif font-bold text-lg text-slate-900">
+            {requests.tableTitle}
+          </h3>
+        </div>
+        <EmptyState
+          title="Aucune demande trouvée"
+          message="Vous n'avez pas encore soumis de demande de signature."
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col min-h-[600px]">
@@ -57,11 +75,17 @@ export default function RequestsPageClient({
         <table className="w-full text-sm">
           <thead className="bg-white text-slate-500 font-bold uppercase tracking-wider text-xs border-b border-slate-200">
             <tr>
-              <th className="px-6 py-4 text-left">{requests.columns.reference}</th>
+              <th className="px-6 py-4 text-left">
+                {requests.columns.reference}
+              </th>
               <th className="px-6 py-4 text-left">{requests.columns.date}</th>
-              <th className="px-6 py-4 text-left">{requests.columns.summary}</th>
+              <th className="px-6 py-4 text-left">
+                {requests.columns.summary}
+              </th>
               <th className="px-6 py-4 text-left">{requests.columns.status}</th>
-              <th className="px-6 py-4 text-right">{requests.columns.details}</th>
+              <th className="px-6 py-4 text-right">
+                {requests.columns.details}
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -96,7 +120,8 @@ export default function RequestsPageClient({
                 <td className="px-6 py-4">
                   {req.rejectedCount > 0 ? (
                     <span className="text-xs font-bold text-amber-600 flex items-center gap-1">
-                      <AlertTriangle className="w-3 h-3" /> {status.attentionRequired}
+                      <AlertTriangle className="w-3 h-3" />{" "}
+                      {status.attentionRequired}
                     </span>
                   ) : req.pendingCount > 0 ? (
                     <span className="text-xs font-bold text-blue-600 flex items-center gap-1">
@@ -112,6 +137,7 @@ export default function RequestsPageClient({
                   <Link
                     href={INSTITUTION_ROUTES.REQUEST_DETAIL(req.id)}
                     className="text-blue-900 hover:bg-blue-100 p-2 rounded-full transition-colors inline-flex"
+                    title="Voir la liste des documents"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </Link>

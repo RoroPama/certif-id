@@ -34,18 +34,58 @@ export type ApprovedDiploma = {
   filiere: string;
 };
 
-export type RequestItemStatus = "PENDING" | "APPROVED" | "REJECTED";
-
-export type RequestItem = {
+// Type pour un document dans une demande (basé sur la structure backend)
+export type RequestDocument = {
   id: string;
-  studentName: string;
-  diplomaName: string;
-  status: RequestItemStatus;
-  rejectionReason?: string;
+  documentTypeId: string;
+  status: null | "APPROUVE" | "REJETE";
+  pdfOriginalUrl?: string;
+  matricule?: string;
+  nomBeneficiaire: string;
+  prenomBeneficiaire: string;
+  dateNaissance?: Date | string;
+  lieuNaissance?: string;
+  dateEmission: Date | string;
+  emetteur: string;
+  documentTypeNom: string;
+  documentTypePrix: number;
+  montantTotal: number;
+  documentTypeDescription?: string;
+  raisonRejet?: string | null;
+  commentaireRejet?: string | null;
+  documentSigne?: {
+    id: string;
+    pdfSigneUrl: string;
+    qrCodeData: string;
+    signataireId: string;
+    createdAt: Date | string;
+  };
+  documentType: {
+    id: string;
+    nom: string;
+    description?: string;
+    prix: number;
+  };
 };
 
+// Type pour une demande (basé sur DemandeEntity du backend + champs enrichis)
 export type SubmittedRequest = {
+  // Champs du backend
   id: string;
+  etablissementId: string;
+  statut: string;
+  note?: string;
+  documents: RequestDocument[];
+  etablissement: {
+    id: string;
+    nom: string;
+    type: string;
+    email: string;
+    telephone: string;
+  };
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  // Champs enrichis/calculés
   reference: string;
   submissionDate: string;
   academicYear: string;
@@ -53,7 +93,6 @@ export type SubmittedRequest = {
   approvedCount: number;
   rejectedCount: number;
   pendingCount: number;
-  items: RequestItem[];
 };
 
 export type DashboardTab =

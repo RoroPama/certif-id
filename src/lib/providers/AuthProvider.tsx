@@ -17,6 +17,7 @@ import {
 } from "@/types/user";
 import { authService } from "@/lib/services/auth.service";
 import { INSTITUTION_ROUTES, GOVERNMENT_ROUTES } from "@/lib/utils/constants";
+import { setCookie, removeCookie } from "@/lib/utils/cookies";
 
 interface AuthContextType {
   user: User | null;
@@ -44,6 +45,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem(AUTH_TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    // Supprimer aussi les cookies pour les Server Components
+    removeCookie(AUTH_TOKEN_KEY);
+    removeCookie(REFRESH_TOKEN_KEY);
     setUser(null);
   }, []);
 
@@ -51,9 +55,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const saveAuth = useCallback((response: LoginResponseDto) => {
     if (response.accessToken) {
       localStorage.setItem(AUTH_TOKEN_KEY, response.accessToken);
+      // Stocker aussi dans un cookie pour les Server Components
+      setCookie(AUTH_TOKEN_KEY, response.accessToken, 7); // 7 jours
     }
     if (response.refreshToken) {
       localStorage.setItem(REFRESH_TOKEN_KEY, response.refreshToken);
+      setCookie(REFRESH_TOKEN_KEY, response.refreshToken, 30); // 30 jours
     }
     if (response.user) {
       localStorage.setItem(USER_KEY, JSON.stringify(response.user));
