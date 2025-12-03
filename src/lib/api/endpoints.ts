@@ -24,4 +24,11 @@ export const API_ENDPOINTS = {
     GET_DOCUMENT_BY_ID: (demandeId: string, documentId: string) =>
       `/etablissement/demandes/${demandeId}/documents/${documentId}`,
   },
+  // Registry (Documents signés)
+  REGISTRY: {
+    GET_ALL: "/etablissement/documents",
+    GET_HISTORY: "/etablissement/documents/history",
+    GET_BY_ID: (id: string) => `/etablissement/documents/${id}`,
+    DOWNLOAD: (id: string) => `/etablissement/documents/${id}/download`,
+  },
 } as const;
