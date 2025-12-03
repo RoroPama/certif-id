@@ -3,12 +3,15 @@
  */
 
 import { useState, useMemo } from "react";
-import type { StudentDraft, Filiere, AcademicYear, SubmittedRequest } from "../types";
+import { requestsService } from "@/lib/services/requests.service";
+import { uploadService } from "@/lib/services/upload.service";
+import type { StudentDraft, Filiere, AcademicYear } from "../types";
+import type { DemandeEntity } from "@/lib/services/requests.service";
 
 interface UseNewRequestProps {
   filieres: Filiere[];
   foundationYear: number;
-  onSubmitSuccess: (request: SubmittedRequest) => void;
+  onSubmitSuccess: () => void;
 }
 
 export function useNewRequest({ filieres, foundationYear, onSubmitSuccess }: UseNewRequestProps) {
@@ -19,6 +22,8 @@ export function useNewRequest({ filieres, foundationYear, onSubmitSuccess }: Use
     pdfFile: null,
     fileName: "",
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const years = useMemo(() => {
     const currentYear = new Date().getFullYear();
@@ -39,9 +44,10 @@ export function useNewRequest({ filieres, foundationYear, onSubmitSuccess }: Use
       !currentEntry.lastName ||
       !currentEntry.filiereId ||
       !currentEntry.diplomaId ||
-      !currentEntry.yearId
+      !currentEntry.yearId ||
+      !currentEntry.pdfFile
     ) {
-      alert("Veuillez remplir tous les champs obligatoires.");
+      alert("Veuillez remplir tous les champs obligatoires, y compris le fichier PDF.");
       return;
     }
     
@@ -76,32 +82,57 @@ export function useNewRequest({ filieres, foundationYear, onSubmitSuccess }: Use
     setDraftList(draftList.filter((d) => d.id !== id));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (draftList.length === 0) return;
 
-    const total = draftList.length;
-    const items = draftList.map((d, i) => ({
-      id: `NEW-${i}`,
-      studentName: `${d.firstName} ${d.lastName}`,
-      diplomaName: d.diplomaName,
-      status: "PENDING" as const,
-    }));
+    setIsSubmitting(true);
+    setError(null);
 
-    const newRequest: SubmittedRequest = {
-      id: Math.random().toString(),
-      reference: `BORD-2024-${Math.floor(Math.random() * 9000) + 1000}`,
-      submissionDate: new Date().toLocaleDateString("fr-FR"),
-      academicYear:
-        years.find((y) => y.id === draftList[0]?.yearId)?.label || "2023-2024",
-      totalCount: total,
-      approvedCount: 0,
-      rejectedCount: 0,
-      pendingCount: total,
-      items,
-    };
+    try {
+      // Pour chaque draft, créer une demande
+      // Note: Le backend crée une demande par document, donc on doit créer une demande pour chaque draft
+      const promises = draftList.map(async (draft) => {
+        // 1. Uploader le PDF
+        if (!draft.pdfFile) {
+          throw new Error(`Fichier PDF manquant pour ${draft.firstName} ${draft.lastName}`);
+        }
 
-    onSubmitSuccess(newRequest);
-    setDraftList([]);
+        const pdfUrl = await uploadService.uploadPdf(draft.pdfFile);
+
+        // 2. Trouver le type de document correspondant au diplôme
+        // Note: Pour l'instant, on utilise le diplomaId comme documentTypeId
+        // Il faudra adapter selon la structure réelle de mapping
+        const documentTypeId = draft.diplomaId; // À adapter selon votre structure
+
+        // 3. Créer la demande
+        const demande = await requestsService.createRequest({
+          documentTypeId,
+          nomBeneficiaire: draft.firstName,
+          prenomBeneficiaire: draft.lastName,
+          dateEmission: new Date().toISOString().split("T")[0], // Date d'aujourd'hui
+          pdfOriginalUrl: pdfUrl,
+          matricule: draft.yearId, // Utiliser l'année comme matricule temporaire
+          note: `Mention: ${draft.mention}`,
+        });
+
+        return demande;
+      });
+
+      await Promise.all(promises);
+
+      // Succès - rediriger
+      setDraftList([]);
+      onSubmitSuccess();
+    } catch (err) {
+      console.error("Erreur lors de la soumission:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Une erreur s'est produite lors de la soumission"
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return {
@@ -109,6 +140,8 @@ export function useNewRequest({ filieres, foundationYear, onSubmitSuccess }: Use
     currentEntry,
     years,
     filieres,
+    isSubmitting,
+    error,
     setCurrentEntry,
     handleAddDraft,
     handleRemoveDraft,

@@ -24,6 +24,8 @@ export default function NewRequestPageClient({
     draftList,
     currentEntry,
     years,
+    isSubmitting,
+    error,
     setCurrentEntry,
     handleAddDraft,
     handleRemoveDraft,
@@ -301,15 +303,29 @@ export default function NewRequestPageClient({
             )}
           </div>
 
-          <div className="p-4 border-t border-slate-200 bg-white">
+          <div className="p-4 border-t border-slate-200 bg-white space-y-3">
+            {error && (
+              <div className="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-lg text-sm">
+                {error}
+              </div>
+            )}
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={draftList.length === 0}
+              disabled={draftList.length === 0 || isSubmitting}
               className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3.5 rounded-lg shadow-lg shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex justify-center items-center gap-2"
             >
-              <Save className="w-5 h-5" />
-              {newRequest.bordereau.submitButton} ({draftList.length})
+              {isSubmitting ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Soumission en cours...
+                </>
+              ) : (
+                <>
+                  <Save className="w-5 h-5" />
+                  {newRequest.bordereau.submitButton} ({draftList.length})
+                </>
+              )}
             </button>
           </div>
         </div>

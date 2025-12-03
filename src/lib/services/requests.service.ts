@@ -75,6 +75,18 @@ export interface DemandeFilters {
   limit?: number;
 }
 
+export interface CreateDemandeDto {
+  documentTypeId: string;
+  nomBeneficiaire: string;
+  prenomBeneficiaire: string;
+  dateNaissance?: string;
+  lieuNaissance?: string;
+  dateEmission: string;
+  pdfOriginalUrl: string;
+  note?: string;
+  matricule?: string;
+}
+
 export interface DocumentDetail {
   id: string;
   demandeId: string;
@@ -173,6 +185,25 @@ export class RequestsService {
   ): Promise<DocumentDetail> {
     return apiClient.get<DocumentDetail>(
       API_ENDPOINTS.REQUESTS.GET_DOCUMENT_BY_ID(demandeId, documentId),
+      {
+        headers: cookieHeader ? { cookie: cookieHeader } : undefined,
+      }
+    );
+  }
+
+  /**
+   * Créer une nouvelle demande de signature
+   * @param createDemandeDto - Données de la demande à créer
+   * @param cookieHeader - Cookie header pour l'authentification (Server Components)
+   * @returns Demande créée
+   */
+  async createRequest(
+    createDemandeDto: CreateDemandeDto,
+    cookieHeader?: string
+  ): Promise<DemandeEntity> {
+    return apiClient.post<DemandeEntity>(
+      API_ENDPOINTS.REQUESTS.CREATE,
+      createDemandeDto,
       {
         headers: cookieHeader ? { cookie: cookieHeader } : undefined,
       }

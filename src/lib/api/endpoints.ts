@@ -23,6 +23,12 @@ export const API_ENDPOINTS = {
     GET_BY_ID: (id: string) => `/etablissement/demandes/${id}`,
     GET_DOCUMENT_BY_ID: (demandeId: string, documentId: string) =>
       `/etablissement/demandes/${demandeId}/documents/${documentId}`,
+    CREATE: "/etablissement/demandes",
+  },
+  // Documents (Types de documents)
+  DOCUMENTS: {
+    GET_TYPES: "/etablissement/documents/types",
+    UPLOAD: "/etablissement/documents/upload",
   },
   // Registry (Documents signés)
   REGISTRY: {
@@ -30,5 +36,11 @@ export const API_ENDPOINTS = {
     GET_HISTORY: "/etablissement/documents/history",
     GET_BY_ID: (id: string) => `/etablissement/documents/${id}`,
     DOWNLOAD: (id: string) => `/etablissement/documents/${id}/download`,
+  },
+  // Profile (Profil établissement)
+  PROFILE: {
+    GET: "/etablissement/profile",
+    UPDATE: "/etablissement/profile",
+    GET_STATS: "/etablissement/profile/stats",
   },
 } as const;
