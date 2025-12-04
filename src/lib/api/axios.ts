@@ -28,7 +28,7 @@ class ApiClient {
     
     this.client = axios.create({
       baseURL,
-      timeout: appConfig.api.timeout,
+      timeout: appConfig.api.timeout || 30000, // 30 secondes par défaut
       headers: {
         "Content-Type": "application/json",
       },
@@ -96,6 +96,23 @@ class ApiClient {
             statusCode,
             errorData.message || error.message || MESSAGES.errors.generic,
             errorData.error
+          );
+        }
+
+        // Gestion des erreurs réseau (timeout, pas de connexion, etc.)
+        if (error.code === 'ECONNABORTED') {
+          throw new ApiClientError(
+            408,
+            'La requête a expiré. Vérifiez que le serveur backend est démarré et accessible.',
+            'TIMEOUT'
+          );
+        }
+
+        if (error.code === 'ERR_NETWORK' || error.message.includes('Network Error')) {
+          throw new ApiClientError(
+            503,
+            'Impossible de se connecter au serveur. Vérifiez que le backend est démarré sur ' + baseURL,
+            'NETWORK_ERROR'
           );
         }
 

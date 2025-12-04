@@ -151,13 +151,16 @@ export function useUniversities() {
       }
 
       // Mapper les données frontend vers le format backend
+      // Les filières contiennent des diplômes (noms de types de documents)
+      const documentTypeNames = data.filieres?.flatMap(f => f.diplomas) || [];
+      
       const createDto: any = {
         nom: data.name,
         email: data.email,
         telephone: data.phone,
         type: data.type === "PUBLIC" ? "PUBLIC" : "PRIVE",
         numeroDecret: `DECRET-${Date.now()}`, // Générer un numéro de décret temporaire
-        documentTypeNames: data.filieres?.flatMap(f => f.diplomas) || [],
+        documentTypeNames: documentTypeNames, // Noms des types de documents (diplômes)
       };
 
       if (data.address) createDto.adresse = data.address;

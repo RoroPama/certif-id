@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   X,
   Building2,
@@ -9,9 +9,15 @@ import {
   Trash2,
   FileSpreadsheet,
   Download,
+  Loader2,
 } from "lucide-react";
 import { MESSAGES } from "@/lib/utils/messages";
+import { configService } from "@/lib/services/config.service";
 import type { UniversityFormData, Filiere } from "../types";
+import type {
+  FiliereEntity,
+  DocumentTypeEntity,
+} from "@/lib/services/config.service";
 
 interface CreateUniversityModalProps {
   onClose: () => void;
@@ -33,31 +39,60 @@ export default function CreateUniversityModal({
     address: "",
     filieres: [],
   });
-  const [newFiliere, setNewFiliere] = useState({ name: "", diploma: "" });
-  const [tempDiplomas, setTempDiplomas] = useState<string[]>([]);
+  const [availableFilieres, setAvailableFilieres] = useState<FiliereEntity[]>(
+    []
+  );
+  const [availableDiplomes, setAvailableDiplomes] = useState<
+    DocumentTypeEntity[]
+  >([]);
+  const [selectedFiliereId, setSelectedFiliereId] = useState<string>("");
+  const [selectedDiplomeIds, setSelectedDiplomeIds] = useState<string[]>([]);
+  const [isLoadingData, setIsLoadingData] = useState(true);
   const { government } = MESSAGES;
   const createMsg = government.pages.universities.create;
 
-  const handleAddDiploma = () => {
-    if (newFiliere.diploma.trim()) {
-      setTempDiplomas((prev) => [...prev, newFiliere.diploma.trim()]);
-      setNewFiliere((prev) => ({ ...prev, diploma: "" }));
-    }
-  };
+  // Charger les filières et diplômes disponibles
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setIsLoadingData(true);
+        const [filieres, diplomes] = await Promise.all([
+          configService.getAllFilieres(),
+          configService.getAllDocumentTypes(),
+        ]);
+        setAvailableFilieres(filieres.filter((f) => f.actif));
+        setAvailableDiplomes(diplomes);
+      } catch (err) {
+        console.error(
+          "Erreur lors du chargement des filières et diplômes:",
+          err
+        );
+      } finally {
+        setIsLoadingData(false);
+      }
+    };
+    loadData();
+  }, []);
 
-  const handleAddFiliere = () => {
-    if (newFiliere.name.trim() && tempDiplomas.length > 0) {
-      const filiere: Filiere = {
-        id: `fil-${Date.now()}`,
-        name: newFiliere.name.trim(),
-        diplomas: tempDiplomas,
-      };
-      setFormData((prev) => ({
-        ...prev,
-        filieres: [...(prev.filieres || []), filiere],
-      }));
-      setNewFiliere({ name: "", diploma: "" });
-      setTempDiplomas([]);
+  const handleAddFiliereAndDiplomes = () => {
+    if (selectedFiliereId && selectedDiplomeIds.length > 0) {
+      const filiere = availableFilieres.find((f) => f.id === selectedFiliereId);
+      if (filiere) {
+        const selectedDiplomes = availableDiplomes.filter((d) =>
+          selectedDiplomeIds.includes(d.id)
+        );
+        const filiereData: Filiere = {
+          id: filiere.id,
+          name: filiere.nom,
+          diplomas: selectedDiplomes.map((d) => d.nom),
+        };
+        setFormData((prev) => ({
+          ...prev,
+          filieres: [...(prev.filieres || []), filiereData],
+        }));
+        setSelectedFiliereId("");
+        setSelectedDiplomeIds([]);
+      }
     }
   };
 
@@ -67,6 +102,21 @@ export default function CreateUniversityModal({
       filieres: prev.filieres?.filter((f) => f.id !== id) || [],
     }));
   };
+
+  const handleDiplomeToggle = (diplomeId: string) => {
+    setSelectedDiplomeIds((prev) =>
+      prev.includes(diplomeId)
+        ? prev.filter((id) => id !== diplomeId)
+        : [...prev, diplomeId]
+    );
+  };
+
+  // Filtrer les diplômes selon la filière sélectionnée
+  const availableDiplomesForFiliere = selectedFiliereId
+    ? availableDiplomes.filter(
+        (d) => d.filiereId === selectedFiliereId || !d.filiereId
+      )
+    : availableDiplomes;
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -262,86 +312,97 @@ export default function CreateUniversityModal({
                   {createMsg.academicSection}
                 </h3>
 
-                <div className="bg-slate-50 rounded-lg p-4 space-y-4">
-                  <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">
-                      {createMsg.fields.filiereName}
-                    </label>
-                    <input
-                      type="text"
-                      placeholder={createMsg.placeholders.filiere}
-                      className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 outline-none bg-white"
-                      value={newFiliere.name}
-                      onChange={(e) =>
-                        setNewFiliere((p) => ({ ...p, name: e.target.value }))
-                      }
-                    />
+                {isLoadingData ? (
+                  <div className="bg-slate-50 rounded-lg p-6 flex items-center justify-center">
+                    <Loader2 className="w-5 h-5 text-slate-400 animate-spin mr-2" />
+                    <span className="text-slate-500">
+                      Chargement des filières et diplômes...
+                    </span>
                   </div>
-
-                  <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">
-                      {createMsg.fields.addDiplomas}
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        placeholder={createMsg.placeholders.diploma}
-                        className="flex-1 px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 outline-none bg-white"
-                        value={newFiliere.diploma}
-                        onChange={(e) =>
-                          setNewFiliere((p) => ({
-                            ...p,
-                            diploma: e.target.value,
-                          }))
-                        }
-                        onKeyDown={(e) =>
-                          e.key === "Enter" && handleAddDiploma()
-                        }
-                      />
-                      <button
-                        onClick={handleAddDiploma}
-                        className="px-4 py-2 bg-slate-200 hover:bg-slate-300 rounded-lg transition-colors"
+                ) : (
+                  <div className="bg-slate-50 rounded-lg p-4 space-y-4">
+                    <div>
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">
+                        Sélectionner une filière
+                      </label>
+                      <select
+                        className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 outline-none bg-white"
+                        value={selectedFiliereId}
+                        onChange={(e) => {
+                          setSelectedFiliereId(e.target.value);
+                          setSelectedDiplomeIds([]);
+                        }}
                       >
-                        <Plus className="w-4 h-4" />
-                      </button>
-                    </div>
-                    {tempDiplomas.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {tempDiplomas.map((d, i) => (
-                          <span
-                            key={i}
-                            className="px-2 py-1 bg-emerald-50 text-emerald-700 rounded text-xs flex items-center gap-1"
-                          >
-                            {d}
-                            <button
-                              onClick={() =>
-                                setTempDiplomas((p) =>
-                                  p.filter((_, idx) => idx !== i)
-                                )
-                              }
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          </span>
+                        <option value="">Sélectionner une filière</option>
+                        {availableFilieres.map((f) => (
+                          <option key={f.id} value={f.id}>
+                            {f.nom} {f.code && `(${f.code})`}
+                          </option>
                         ))}
+                      </select>
+                    </div>
+
+                    {selectedFiliereId && (
+                      <div>
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">
+                          Sélectionner les diplômes autorisés
+                        </label>
+                        <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-lg bg-white p-2 space-y-2">
+                          {availableDiplomesForFiliere.length === 0 ? (
+                            <p className="text-xs text-slate-400 text-center py-2">
+                              Aucun diplôme disponible pour cette filière
+                            </p>
+                          ) : (
+                            availableDiplomesForFiliere.map((diplome) => (
+                              <label
+                                key={diplome.id}
+                                className="flex items-center gap-2 p-2 hover:bg-slate-50 rounded cursor-pointer"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={selectedDiplomeIds.includes(
+                                    diplome.id
+                                  )}
+                                  onChange={() =>
+                                    handleDiplomeToggle(diplome.id)
+                                  }
+                                  className="w-4 h-4 text-emerald-600 border-slate-300 rounded focus:ring-emerald-500"
+                                />
+                                <span className="text-sm text-slate-700">
+                                  {diplome.nom}
+                                  {diplome.description && (
+                                    <span className="text-xs text-slate-500 ml-2">
+                                      - {diplome.description}
+                                    </span>
+                                  )}
+                                </span>
+                              </label>
+                            ))
+                          )}
+                        </div>
+                        {selectedDiplomeIds.length > 0 && (
+                          <p className="text-xs text-slate-500 mt-2">
+                            {selectedDiplomeIds.length} diplôme
+                            {selectedDiplomeIds.length > 1 ? "s" : ""}{" "}
+                            sélectionné
+                            {selectedDiplomeIds.length > 1 ? "s" : ""}
+                          </p>
+                        )}
                       </div>
                     )}
-                    {tempDiplomas.length === 0 && (
-                      <p className="text-xs text-slate-400 mt-2">
-                        {createMsg.noDiplomas}
-                      </p>
-                    )}
-                  </div>
 
-                  <button
-                    onClick={handleAddFiliere}
-                    disabled={!newFiliere.name || tempDiplomas.length === 0}
-                    className="w-full py-2.5 border-2 border-dashed border-emerald-300 text-emerald-700 rounded-lg hover:bg-emerald-50 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <Plus className="w-4 h-4 inline mr-2" />
-                    {createMsg.addFiliere}
-                  </button>
-                </div>
+                    <button
+                      onClick={handleAddFiliereAndDiplomes}
+                      disabled={
+                        !selectedFiliereId || selectedDiplomeIds.length === 0
+                      }
+                      className="w-full py-2.5 border-2 border-dashed border-emerald-300 text-emerald-700 rounded-lg hover:bg-emerald-50 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Plus className="w-4 h-4 inline mr-2" />
+                      Ajouter la filière et ses diplômes
+                    </button>
+                  </div>
+                )}
 
                 {/* Liste des filières ajoutées */}
                 {formData.filieres && formData.filieres.length > 0 && (
@@ -396,7 +457,9 @@ export default function CreateUniversityModal({
                 <p className="text-sm text-slate-600 mb-2">
                   {createMsg.bulkUploadText}
                 </p>
-                <p className="text-xs text-slate-400">{createMsg.bulkFormats}</p>
+                <p className="text-xs text-slate-400">
+                  {createMsg.bulkFormats}
+                </p>
               </div>
 
               <button className="w-full py-3 border border-emerald-600 text-emerald-700 rounded-lg hover:bg-emerald-50 transition-colors text-sm font-medium flex items-center justify-center gap-2">
