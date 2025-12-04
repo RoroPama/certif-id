@@ -13,6 +13,7 @@ import {
   User,
   GraduationCap,
   Calendar,
+  Eye,
 } from "lucide-react";
 import { GOVERNMENT_ROUTES } from "@/lib/utils/constants";
 import { MESSAGES } from "@/lib/utils/messages";
@@ -35,6 +36,8 @@ export default function CertificationDetailPageClient({
   } = useCertifications();
 
   const [request, setRequest] = useState<CertificationRequest | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showRejectModal, setShowRejectModal] = useState<string | null>(null);
   const [showBulkRejectModal, setShowBulkRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
@@ -42,53 +45,108 @@ export default function CertificationDetailPageClient({
   const detailMsg = government.pages.certifications.detail;
 
   useEffect(() => {
-    const data = getRequestById(requestId);
-    if (data) {
-      setRequest(data);
-    }
+    const loadRequest = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const data = await getRequestById(requestId);
+        if (data) {
+          setRequest(data);
+        } else {
+          setError("Demande non trouvée");
+        }
+      } catch (err) {
+        console.error("Erreur lors du chargement:", err);
+        setError(
+          err instanceof Error ? err.message : "Erreur lors du chargement"
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadRequest();
   }, [requestId, getRequestById]);
 
   // Refresh request data after updates
-  const refreshRequest = () => {
-    const data = getRequestById(requestId);
-    if (data) setRequest(data);
+  const refreshRequest = async () => {
+    try {
+      const data = await getRequestById(requestId);
+      if (data) setRequest(data);
+    } catch (err) {
+      console.error("Erreur lors du rafraîchissement:", err);
+    }
   };
 
-  if (!request) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-slate-500">{MESSAGES.common.loading}</p>
+        <div className="text-center">
+          <Clock className="w-12 h-12 text-slate-400 mx-auto mb-4 animate-spin" />
+          <p className="text-slate-500">{MESSAGES.common.loading}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !request) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <AlertTriangle className="w-12 h-12 text-rose-500 mx-auto mb-4" />
+          <p className="text-slate-700 font-medium">{error || "Demande non trouvée"}</p>
+        </div>
       </div>
     );
   }
 
   const stats = getRequestStats(request);
 
-  const handleValidate = (itemId: string) => {
-    updateItemStatus(requestId, itemId, "APPROVED");
-    refreshRequest();
-  };
-
-  const handleReject = (itemId: string) => {
-    if (rejectReason.trim()) {
-      updateItemStatus(requestId, itemId, "REJECTED", rejectReason);
-      setShowRejectModal(null);
-      setRejectReason("");
-      refreshRequest();
+  const handleValidate = async (itemId: string) => {
+    try {
+      await updateItemStatus(requestId, itemId, "APPROVED");
+      await refreshRequest();
+    } catch (err) {
+      console.error("Erreur lors de la validation:", err);
+      alert("Erreur lors de la validation. Veuillez réessayer.");
     }
   };
 
-  const handleBulkValidate = () => {
-    bulkValidateItems(requestId);
-    refreshRequest();
+  const handleReject = async (itemId: string) => {
+    if (rejectReason.trim()) {
+      try {
+        await updateItemStatus(requestId, itemId, "REJECTED", rejectReason);
+        setShowRejectModal(null);
+        setRejectReason("");
+        await refreshRequest();
+      } catch (err) {
+        console.error("Erreur lors du rejet:", err);
+        alert("Erreur lors du rejet. Veuillez réessayer.");
+      }
+    }
   };
 
-  const handleBulkReject = () => {
+  const handleBulkValidate = async () => {
+    try {
+      await bulkValidateItems(requestId);
+      await refreshRequest();
+    } catch (err) {
+      console.error("Erreur lors de l'approbation en masse:", err);
+      alert("Erreur lors de l'approbation en masse. Veuillez réessayer.");
+    }
+  };
+
+  const handleBulkReject = async () => {
     if (rejectReason.trim()) {
-      bulkRejectItems(requestId, rejectReason);
-      setShowBulkRejectModal(false);
-      setRejectReason("");
-      refreshRequest();
+      try {
+        await bulkRejectItems(requestId, rejectReason);
+        setShowBulkRejectModal(false);
+        setRejectReason("");
+        await refreshRequest();
+      } catch (err) {
+        console.error("Erreur lors du rejet en masse:", err);
+        alert("Erreur lors du rejet en masse. Veuillez réessayer.");
+      }
     }
   };
 
@@ -194,6 +252,7 @@ export default function CertificationDetailPageClient({
                 <th className="px-6 py-4 text-left">{detailMsg.columns.diploma}</th>
                 <th className="px-6 py-4 text-left">{detailMsg.columns.mention}</th>
                 <th className="px-6 py-4 text-center">{detailMsg.columns.status}</th>
+                <th className="px-6 py-4 text-center">Détails</th>
                 <th className="px-6 py-4 text-right">{detailMsg.columns.action}</th>
               </tr>
             </thead>
@@ -258,6 +317,15 @@ export default function CertificationDetailPageClient({
                         {detailMsg.toProcess}
                       </span>
                     )}
+                  </td>
+                  <td className="px-6 py-4 text-center">
+                    <Link
+                      href={`/government/certifications/${requestId}/documents/${item.id}`}
+                      className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
+                      title="Voir les détails"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </Link>
                   </td>
                   <td className="px-6 py-4 text-right">
                     {item.status === "PENDING" ? (

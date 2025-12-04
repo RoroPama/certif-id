@@ -10,12 +10,11 @@ import {
   CheckCircle2,
   Clock,
   Ban,
-  Maximize2,
-  File,
 } from "lucide-react";
 import { INSTITUTION_ROUTES } from "@/lib/utils/constants";
 import { MESSAGES } from "@/lib/utils/messages";
 import type { DocumentDetail } from "@/lib/services/requests.service";
+import PdfViewer from "@/components/ui/PdfViewer";
 
 interface RequestDetailsPageClientProps {
   documentDetail: DocumentDetail;
@@ -28,9 +27,10 @@ export default function RequestDetailsPageClient({
 
   const studentName = `${documentDetail.nomBeneficiaire} ${documentDetail.prenomBeneficiaire}`;
   const hasSignedDocument = documentDetail.documentSigne?.pdfSigneUrl;
-  const pdfUrl = hasSignedDocument
+  const originalPdfUrl = documentDetail.pdfOriginalUrl;
+  const signedPdfUrl = hasSignedDocument
     ? documentDetail.documentSigne!.pdfSigneUrl
-    : documentDetail.pdfOriginalUrl;
+    : undefined;
 
   // Formater la date
   const formatDate = (date: Date | string) => {
@@ -253,69 +253,20 @@ export default function RequestDetailsPageClient({
         </div>
 
         {/* Colonne Droite: Prévisualisation Fichier */}
-        <div className="lg:col-span-2 bg-slate-900 rounded-xl shadow-inner border border-slate-800 flex flex-col overflow-hidden relative group">
-          {/* PDF Viewer Toolbar */}
-          <div className="bg-slate-950 text-slate-400 px-4 py-3 flex justify-between items-center text-xs border-b border-white/5">
-            <div className="flex items-center gap-3">
-              <File className="w-4 h-4" />
-              <span className="font-mono text-slate-300">
-                {`${documentDetail.documentTypeNom.replace(/\s+/g, "_")}_${
-                  documentDetail.id
-                }.pdf`}
-              </span>
-            </div>
-            <div className="flex items-center gap-4">
-              <span>{MESSAGES.pagination.page} 1 / 1</span>
-              <div className="h-4 w-px bg-white/10"></div>
-              <div className="flex gap-2">
-                <button className="hover:text-white transition-colors">
-                  -
-                </button>
-                <span>100%</span>
-                <button className="hover:text-white transition-colors">
-                  +
-                </button>
-              </div>
-              <div className="h-4 w-px bg-white/10"></div>
-              <button
-                className="hover:text-white transition-colors"
-                title="Plein écran"
-              >
-                <Maximize2 className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-
-          {/* PDF Canvas Area */}
-          <div className="flex-1 bg-slate-800 overflow-auto flex items-center justify-center p-8 relative">
-            {pdfUrl ? (
-              <iframe
-                src={pdfUrl}
-                className="w-full h-full border-0 rounded"
-                title="Aperçu du document"
-              />
-            ) : (
-              <div className="bg-white w-full max-w-[500px] aspect-[1/1.414] shadow-2xl flex flex-col relative transition-transform duration-300 group-hover:scale-[1.01]">
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-300 gap-4">
-                  <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
-                    <FileText className="w-8 h-8 text-slate-300" />
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm font-medium text-slate-400">
-                      Document non disponible
-                    </p>
-                    <p className="text-xs text-slate-300 mt-1">
-                      {documentDetail.status === null
-                        ? "Le document est en attente de traitement"
-                        : documentDetail.status === "REJETE"
-                        ? "Le document a été rejeté"
-                        : "Aucun document disponible"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+        <div className="lg:col-span-2 flex flex-col min-h-0">
+          <PdfViewer
+            originalPdfUrl={originalPdfUrl}
+            signedPdfUrl={signedPdfUrl}
+            fileName={`${documentDetail.documentTypeNom}_${documentDetail.id}.pdf`}
+            emptyStateMessage="Document non disponible"
+            emptyStateDescription={
+              documentDetail.status === null
+                ? "Le document est en attente de traitement"
+                : documentDetail.status === "REJETE"
+                ? "Le document a été rejeté"
+                : "Aucun document disponible"
+            }
+          />
         </div>
       </div>
     </div>

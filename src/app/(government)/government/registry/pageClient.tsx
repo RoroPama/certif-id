@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import {
   Search,
@@ -15,33 +15,116 @@ import {
 import { PaginationControls, SearchableSelect } from "@/components/shared";
 import { GOVERNMENT_ROUTES } from "@/lib/utils/constants";
 import { MESSAGES } from "@/lib/utils/messages";
-import { useGovernmentRegistry } from "../hooks";
+import type { RegistryEntry } from "../types";
 
-export default function RegistryPageClient() {
-  const {
-    entries,
-    totalCount,
-    currentPage,
-    totalPages,
-    search,
-    universityFilter,
-    yearFilter,
-    statusFilter,
-    universities,
-    years,
-    handleSearchChange,
-    handleUniversityFilterChange,
-    handleYearFilterChange,
-    handleStatusFilterChange,
-    handlePageChange,
-    resetFilters,
-  } = useGovernmentRegistry();
+interface RegistryPageClientProps {
+  initialRegistryData: RegistryEntry[];
+}
+
+const ITEMS_PER_PAGE = 10;
+
+export default function RegistryPageClient({
+  initialRegistryData,
+}: RegistryPageClientProps) {
+  const [search, setSearch] = useState("");
+  const [universityFilter, setUniversityFilter] = useState<string>("all");
+  const [yearFilter, setYearFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Extraire les universités uniques depuis les données
+  const universities = useMemo(() => {
+    const uniqueUniversities = new Map<string, string>();
+    initialRegistryData.forEach((entry) => {
+      if (!uniqueUniversities.has(entry.universityName)) {
+        uniqueUniversities.set(entry.universityName, entry.universityName);
+      }
+    });
+    return Array.from(uniqueUniversities.entries()).map(([name], index) => ({
+      id: `univ-${index}`,
+      name,
+    }));
+  }, [initialRegistryData]);
+
+  // Extraire les années uniques depuis les données
+  const years = useMemo(() => {
+    const uniqueYears = new Set<string>();
+    initialRegistryData.forEach((entry) => {
+      uniqueYears.add(entry.year);
+    });
+    return Array.from(uniqueYears).sort().reverse();
+  }, [initialRegistryData]);
+
+  // Filtrer les entrées
+  const filteredEntries = useMemo(() => {
+    return initialRegistryData.filter((entry) => {
+      // Filtre par recherche
+      const matchesSearch =
+        search === "" ||
+        entry.serialNumber.toLowerCase().includes(search.toLowerCase()) ||
+        entry.studentName.toLowerCase().includes(search.toLowerCase()) ||
+        entry.diplomaTitle.toLowerCase().includes(search.toLowerCase());
+
+      // Filtre par université
+      const matchesUniversity =
+        universityFilter === "all" || entry.universityName === universityFilter;
+
+      // Filtre par année
+      const matchesYear = yearFilter === "all" || entry.year === yearFilter;
+
+      // Filtre par statut
+      const matchesStatus =
+        statusFilter === "all" || entry.status === statusFilter;
+
+      return matchesSearch && matchesUniversity && matchesYear && matchesStatus;
+    });
+  }, [initialRegistryData, search, universityFilter, yearFilter, statusFilter]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredEntries.length / ITEMS_PER_PAGE);
+  const entries = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredEntries.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredEntries, currentPage]);
+
+  // Handlers
+  const handleSearchChange = useCallback((value: string) => {
+    setSearch(value);
+    setCurrentPage(1);
+  }, []);
+
+  const handleUniversityFilterChange = useCallback((value: string) => {
+    setUniversityFilter(value);
+    setCurrentPage(1);
+  }, []);
+
+  const handleYearFilterChange = useCallback((value: string) => {
+    setYearFilter(value);
+    setCurrentPage(1);
+  }, []);
+
+  const handleStatusFilterChange = useCallback((value: string) => {
+    setStatusFilter(value);
+    setCurrentPage(1);
+  }, []);
+
+  const handlePageChange = useCallback((page: number) => {
+    setCurrentPage(page);
+  }, []);
+
+  const resetFilters = useCallback(() => {
+    setSearch("");
+    setUniversityFilter("all");
+    setYearFilter("all");
+    setStatusFilter("all");
+    setCurrentPage(1);
+  }, []);
 
   const { government } = MESSAGES;
   const registryMsg = government.pages.registry;
 
   const universityOptions = universities.map((u) => ({
-    value: u.id,
+    value: u.name,
     label: u.name,
   }));
   const yearOptions = years.map((y) => ({ value: y, label: y }));

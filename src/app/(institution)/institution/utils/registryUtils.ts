@@ -69,6 +69,7 @@ export function transformDocumentToDiploma(
     status,
     mention: "N/A", // Cette information n'est pas disponible dans DocumentSigneEntity
     filiere: "N/A", // Cette information n'est pas disponible dans DocumentSigneEntity
+    pdfSigneUrl: document.pdfSigneUrl,
   };
 }
 

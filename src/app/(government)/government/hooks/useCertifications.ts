@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
-import { MOCK_CERTIFICATION_REQUESTS } from "../utils/mockData";
+import { useState, useMemo, useCallback, useEffect } from "react";
+import { governmentService } from "@/lib/services/government.service";
+import { mapDemandeToCertificationRequest } from "../utils/demandeMapper";
 import type { CertificationRequest, CertificationItemStatus } from "../types";
 
 const ITEMS_PER_PAGE = 10;
@@ -9,23 +10,72 @@ const ITEMS_PER_PAGE = 10;
 export function useCertifications() {
   const [filter, setFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const [requests, setRequests] = useState<CertificationRequest[]>(
-    MOCK_CERTIFICATION_REQUESTS
-  );
+  const [requests, setRequests] = useState<CertificationRequest[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Filtrer les demandes
-  const filteredRequests = useMemo(() => {
-    if (filter === "all") return requests;
-    if (filter === "pending") {
-      return requests.filter(
-        (r) => r.status === "PENDING" || r.status === "PARTIAL"
-      );
-    }
-    if (filter === "completed") {
-      return requests.filter((r) => r.status === "COMPLETED");
-    }
-    return requests;
-  }, [requests, filter]);
+  // Charger les demandes depuis l'API
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchDemandes = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        // Mapper le filtre frontend vers le filtre backend
+        let statutFilter: "EN_ATTENTE" | "TRAITEE" | "REJETEE" | undefined;
+        if (filter === "pending") {
+          statutFilter = "EN_ATTENTE";
+        } else if (filter === "completed") {
+          // Pour "completed", on récupère toutes les demandes et on filtre côté client
+          statutFilter = undefined;
+        }
+
+        const response = await governmentService.getAllDemandes({
+          statut: statutFilter,
+          limit: 100, // Récupérer toutes les demandes pour la pagination côté client
+        });
+
+        if (!isMounted) return;
+
+        // Mapper les demandes backend vers le format frontend
+        const mappedRequests = response.demandes.map((demande) =>
+          mapDemandeToCertificationRequest(demande)
+        );
+
+        // Filtrer les demandes "completed" si nécessaire
+        let filtered = mappedRequests;
+        if (filter === "completed") {
+          filtered = mappedRequests.filter((r) => r.status === "COMPLETED");
+        }
+
+        setRequests(filtered);
+      } catch (err) {
+        if (!isMounted) return;
+        console.error("Erreur lors du chargement des demandes:", err);
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Erreur lors du chargement des demandes"
+        );
+        setRequests([]);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchDemandes();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [filter]);
+
+  // Les demandes sont déjà filtrées lors du chargement depuis l'API
+  const filteredRequests = requests;
 
   // Pagination
   const totalPages = Math.ceil(filteredRequests.length / ITEMS_PER_PAGE);
@@ -45,91 +95,96 @@ export function useCertifications() {
   }, []);
 
   const getRequestById = useCallback(
-    (id: string) => {
-      return requests.find((r) => r.id === id) || null;
+    async (id: string): Promise<CertificationRequest | null> => {
+      try {
+        // D'abord chercher dans les requêtes déjà chargées
+        const cached = requests.find((r) => r.id === id);
+        if (cached) return cached;
+
+        // Sinon, charger depuis l'API
+        const demande = await governmentService.getDemandeById(id);
+        return mapDemandeToCertificationRequest(demande);
+      } catch (err) {
+        console.error("Erreur lors du chargement de la demande:", err);
+        return null;
+      }
     },
     [requests]
   );
 
   const updateItemStatus = useCallback(
-    (
+    async (
       requestId: string,
       itemId: string,
       status: CertificationItemStatus,
       rejectionReason?: string
     ) => {
-      setRequests((prev) =>
-        prev.map((req) => {
-          if (req.id !== requestId) return req;
+      try {
+        if (status === "APPROVED") {
+          // Utiliser bulkApproveDocuments avec seulement cet item
+          await governmentService.bulkApproveDocuments(requestId, {
+            documentIds: [itemId],
+          });
+        } else if (status === "REJECTED") {
+          await governmentService.rejectDocument(requestId, itemId, {
+            raisonRejet: rejectionReason || "Rejeté par le ministère",
+            commentaire: rejectionReason,
+          });
+        }
 
-          const updatedItems = req.items.map((item) =>
-            item.id === itemId
-              ? { ...item, status, rejectionReason }
-              : item
-          );
+        // Recharger la demande mise à jour
+        const updatedDemande = await governmentService.getDemandeById(requestId);
+        const mappedRequest = mapDemandeToCertificationRequest(updatedDemande);
 
-          const processedCount = updatedItems.filter(
-            (i) => i.status !== "PENDING"
-          ).length;
+        setRequests((prev) =>
+          prev.map((req) => (req.id === requestId ? mappedRequest : req))
+        );
 
-          let newStatus = req.status;
-          if (processedCount === updatedItems.length) {
-            newStatus = "COMPLETED";
-          } else if (processedCount > 0) {
-            newStatus = "PARTIAL";
-          }
-
-          return {
-            ...req,
-            items: updatedItems,
-            processedCount,
-            status: newStatus,
-          };
-        })
-      );
+        return mappedRequest;
+      } catch (err) {
+        console.error("Erreur lors de la mise à jour du statut:", err);
+        throw err;
+      }
     },
     []
   );
 
-  const bulkValidateItems = useCallback((requestId: string) => {
-    setRequests((prev) =>
-      prev.map((req) => {
-        if (req.id !== requestId) return req;
+  const bulkValidateItems = useCallback(async (requestId: string) => {
+    try {
+      await governmentService.bulkApproveDocuments(requestId, {});
 
-        const updatedItems = req.items.map((item) =>
-          item.status === "PENDING" ? { ...item, status: "APPROVED" as const } : item
-        );
+      // Recharger la demande mise à jour
+      const updatedDemande = await governmentService.getDemandeById(requestId);
+      const mappedRequest = mapDemandeToCertificationRequest(updatedDemande);
 
-        return {
-          ...req,
-          items: updatedItems,
-          processedCount: updatedItems.length,
-          status: "COMPLETED",
-        };
-      })
-    );
+      setRequests((prev) =>
+        prev.map((req) => (req.id === requestId ? mappedRequest : req))
+      );
+    } catch (err) {
+      console.error("Erreur lors de l'approbation en masse:", err);
+      throw err;
+    }
   }, []);
 
   const bulkRejectItems = useCallback(
-    (requestId: string, reason: string) => {
-      setRequests((prev) =>
-        prev.map((req) => {
-          if (req.id !== requestId) return req;
+    async (requestId: string, reason: string) => {
+      try {
+        await governmentService.bulkRejectDocuments(requestId, {
+          raisonRejet: reason,
+          commentaire: reason,
+        });
 
-          const updatedItems = req.items.map((item) =>
-            item.status === "PENDING"
-              ? { ...item, status: "REJECTED" as const, rejectionReason: reason }
-              : item
-          );
+        // Recharger la demande mise à jour
+        const updatedDemande = await governmentService.getDemandeById(requestId);
+        const mappedRequest = mapDemandeToCertificationRequest(updatedDemande);
 
-          return {
-            ...req,
-            items: updatedItems,
-            processedCount: updatedItems.length,
-            status: "COMPLETED",
-          };
-        })
-      );
+        setRequests((prev) =>
+          prev.map((req) => (req.id === requestId ? mappedRequest : req))
+        );
+      } catch (err) {
+        console.error("Erreur lors du rejet en masse:", err);
+        throw err;
+      }
     },
     []
   );
@@ -149,6 +204,8 @@ export function useCertifications() {
     currentPage,
     totalPages,
     filter,
+    isLoading,
+    error,
     handleFilterChange,
     handlePageChange,
     getRequestById,
@@ -156,6 +213,10 @@ export function useCertifications() {
     bulkValidateItems,
     bulkRejectItems,
     getRequestStats,
+    refreshRequests: () => {
+      // Déclencher un rechargement en changeant temporairement le filtre
+      setFilter((prev) => prev);
+    },
   };
 }
 

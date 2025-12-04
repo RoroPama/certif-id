@@ -22,6 +22,8 @@ export default function CertificationsPageClient() {
     currentPage,
     totalPages,
     filter,
+    isLoading,
+    error,
     handleFilterChange,
     handlePageChange,
     getRequestStats,
@@ -87,7 +89,21 @@ export default function CertificationsPageClient() {
 
       {/* Liste des demandes */}
       <div className="flex-1 p-4 space-y-3">
-        {requests.map((request) => {
+        {isLoading && (
+          <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+            <Clock className="w-16 h-16 opacity-20 mb-4 animate-spin" />
+            <p className="text-lg font-medium">{MESSAGES.common.loading}</p>
+          </div>
+        )}
+
+        {error && (
+          <div className="flex flex-col items-center justify-center py-16 text-rose-500">
+            <AlertTriangle className="w-16 h-16 opacity-20 mb-4" />
+            <p className="text-lg font-medium">{error}</p>
+          </div>
+        )}
+
+        {!isLoading && !error && requests.map((request) => {
           const stats = getRequestStats(request);
           const progressPercent = Math.round(
             (request.processedCount / request.totalStudents) * 100
@@ -179,7 +195,7 @@ export default function CertificationsPageClient() {
           );
         })}
 
-        {requests.length === 0 && (
+        {!isLoading && !error && requests.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 text-slate-400">
             <FileCheck className="w-16 h-16 opacity-20 mb-4" />
             <p className="text-lg font-medium">{MESSAGES.common.noResults}</p>

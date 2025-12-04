@@ -15,7 +15,7 @@ import type { UniversityFormData, Filiere } from "../types";
 
 interface CreateUniversityModalProps {
   onClose: () => void;
-  onSubmit: (data: UniversityFormData) => void;
+  onSubmit: (data: UniversityFormData) => Promise<void>;
 }
 
 export default function CreateUniversityModal({
@@ -29,6 +29,8 @@ export default function CreateUniversityModal({
     rector: "",
     email: "",
     city: "",
+    phone: "",
+    address: "",
     filieres: [],
   });
   const [newFiliere, setNewFiliere] = useState({ name: "", diploma: "" });
@@ -66,8 +68,26 @@ export default function CreateUniversityModal({
     }));
   };
 
-  const handleSubmit = () => {
-    onSubmit(formData);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const handleSubmit = async () => {
+    if (!formData.name || !formData.email || !formData.phone) {
+      setSubmitError("Le nom, l'email et le téléphone sont requis");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      setSubmitError(null);
+      await onSubmit(formData);
+    } catch (err) {
+      setSubmitError(
+        err instanceof Error ? err.message : "Erreur lors de la création"
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -203,6 +223,34 @@ export default function CreateUniversityModal({
                     <p className="text-xs text-slate-400 mt-1">
                       {createMsg.emailNotice}
                     </p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">
+                      Téléphone
+                    </label>
+                    <input
+                      type="tel"
+                      placeholder="+242 06 XXX XX XX"
+                      className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 outline-none"
+                      value={formData.phone || ""}
+                      onChange={(e) =>
+                        setFormData((p) => ({ ...p, phone: e.target.value }))
+                      }
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">
+                      Adresse
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Adresse complète de l'établissement"
+                      className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 outline-none"
+                      value={formData.address || ""}
+                      onChange={(e) =>
+                        setFormData((p) => ({ ...p, address: e.target.value }))
+                      }
+                    />
                   </div>
                 </div>
               </div>
@@ -360,19 +408,32 @@ export default function CreateUniversityModal({
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-slate-200 bg-slate-50 flex justify-end gap-3">
-          <button
-            onClick={onClose}
-            className="px-6 py-2.5 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-100 transition-colors text-sm font-medium"
-          >
-            {MESSAGES.common.cancel}
-          </button>
-          <button
-            onClick={handleSubmit}
-            className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors text-sm font-medium shadow-sm"
-          >
-            {mode === "manual" ? createMsg.validateButton : createMsg.importButton}
-          </button>
+        <div className="p-6 border-t border-slate-200 bg-slate-50 space-y-3">
+          {submitError && (
+            <div className="bg-rose-50 border border-rose-200 rounded-lg p-3">
+              <p className="text-sm text-rose-700">{submitError}</p>
+            </div>
+          )}
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={onClose}
+              disabled={isSubmitting}
+              className="px-6 py-2.5 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-100 transition-colors text-sm font-medium disabled:opacity-50"
+            >
+              {MESSAGES.common.cancel}
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors text-sm font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSubmitting
+                ? "Création..."
+                : mode === "manual"
+                ? createMsg.validateButton
+                : createMsg.importButton}
+            </button>
+          </div>
         </div>
       </div>
     </div>

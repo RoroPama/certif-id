@@ -32,6 +32,7 @@ export type ApprovedDiploma = {
   status: "active" | "revoked";
   mention: string;
   filiere: string;
+  pdfSigneUrl?: string;
 };
 
 // Type pour un document dans une demande (basé sur la structure backend)

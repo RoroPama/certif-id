@@ -8,11 +8,10 @@ import {
   Printer,
   FileText,
   CheckCircle2,
-  Maximize2,
-  File,
   Eye,
 } from "lucide-react";
 import type { ApprovedDiploma } from "../../types";
+import PdfViewer from "@/components/ui/PdfViewer";
 
 interface DiplomaDetailPageClientProps {
   diploma: ApprovedDiploma;
@@ -135,60 +134,13 @@ export default function DiplomaDetailPageClient({
         </div>
 
         {/* Colonne Droite: Prévisualisation Fichier */}
-        <div className="lg:col-span-2 bg-slate-900 rounded-xl shadow-inner border border-slate-800 flex flex-col overflow-hidden relative group">
-          {/* PDF Viewer Toolbar */}
-          <div className="bg-slate-950 text-slate-400 px-4 py-3 flex justify-between items-center text-xs border-b border-white/5">
-            <div className="flex items-center gap-3">
-              <File className="w-4 h-4" />
-              <span className="font-mono text-slate-300">
-                {diploma.serialNumber}.pdf
-              </span>
-            </div>
-            <div className="flex items-center gap-4">
-              <span>Page 1 / 1</span>
-              <div className="h-4 w-px bg-white/10"></div>
-              <div className="flex gap-2">
-                <button className="hover:text-white transition-colors">
-                  -
-                </button>
-                <span>100%</span>
-                <button className="hover:text-white transition-colors">
-                  +
-                </button>
-              </div>
-              <div className="h-4 w-px bg-white/10"></div>
-              <button
-                className="hover:text-white transition-colors"
-                title="Plein écran"
-              >
-                <Maximize2 className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-
-          {/* PDF Canvas Area (Simulated) */}
-          <div className="flex-1 bg-slate-800 overflow-auto flex items-center justify-center p-8 relative">
-            <div className="bg-white w-full max-w-[500px] aspect-[1/1.414] shadow-2xl flex flex-col relative transition-transform duration-300 group-hover:scale-[1.01]">
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-300 gap-4">
-                <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
-                  <FileText className="w-8 h-8 text-slate-300" />
-                </div>
-                <div className="text-center">
-                  <p className="text-sm font-medium text-slate-400">
-                    Aperçu du document
-                  </p>
-                  <p className="text-xs text-slate-300 mt-1">
-                    Fichier original uploadé par l'établissement
-                  </p>
-                </div>
-              </div>
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                <button className="bg-white text-slate-900 px-4 py-2 rounded-full shadow-lg font-bold text-sm transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 flex items-center gap-2">
-                  <Eye className="w-4 h-4" /> Ouvrir le PDF
-                </button>
-              </div>
-            </div>
-          </div>
+        <div className="lg:col-span-2 flex flex-col min-h-0">
+          <PdfViewer
+            pdfUrl={diploma.pdfSigneUrl}
+            fileName={`${diploma.serialNumber}.pdf`}
+            emptyStateMessage="Aperçu du document"
+            emptyStateDescription="Fichier original uploadé par l'établissement"
+          />
         </div>
       </div>
     </div>
