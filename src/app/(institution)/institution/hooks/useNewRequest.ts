@@ -89,36 +89,52 @@ export function useNewRequest({ filieres, foundationYear, onSubmitSuccess }: Use
     setError(null);
 
     try {
-      // Pour chaque draft, créer une demande
-      // Note: Le backend crée une demande par document, donc on doit créer une demande pour chaque draft
-      const promises = draftList.map(async (draft) => {
+      // Uploader tous les PDFs et préparer les documents
+      const documentPromises = draftList.map(async (draft) => {
         // 1. Uploader le PDF
         if (!draft.pdfFile) {
-          throw new Error(`Fichier PDF manquant pour ${draft.firstName} ${draft.lastName}`);
+          throw new Error(
+            `Fichier PDF manquant pour ${draft.firstName} ${draft.lastName}`
+          );
         }
 
         const pdfUrl = await uploadService.uploadPdf(draft.pdfFile);
 
         // 2. Trouver le type de document correspondant au diplôme
-        // Note: Pour l'instant, on utilise le diplomaId comme documentTypeId
-        // Il faudra adapter selon la structure réelle de mapping
-        const documentTypeId = draft.diplomaId; // À adapter selon votre structure
+        // Le diplomaId est l'ID du type de document (mappé depuis les types de documents autorisés)
+        const documentTypeId = draft.diplomaId;
 
-        // 3. Créer la demande
-        const demande = await requestsService.createRequest({
+        // Validation : vérifier que documentTypeId est un UUID valide
+        if (
+          !documentTypeId ||
+          !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+            documentTypeId
+          )
+        ) {
+          throw new Error(
+            `ID de type de document invalide pour ${draft.firstName} ${draft.lastName}. Veuillez sélectionner un type de document valide.`
+          );
+        }
+
+        // 3. Retourner les données du document
+        return {
           documentTypeId,
           nomBeneficiaire: draft.firstName,
           prenomBeneficiaire: draft.lastName,
           dateEmission: new Date().toISOString().split("T")[0], // Date d'aujourd'hui
           pdfOriginalUrl: pdfUrl,
           matricule: draft.yearId, // Utiliser l'année comme matricule temporaire
-          note: `Mention: ${draft.mention}`,
-        });
-
-        return demande;
+        };
       });
 
-      await Promise.all(promises);
+      // Attendre que tous les uploads soient terminés
+      const documents = await Promise.all(documentPromises);
+
+      // Créer une seule demande avec tous les documents
+      const demande = await requestsService.createRequest({
+        documents,
+        note: `Demande groupée - ${draftList.length} document(s)`,
+      });
 
       // Succès - rediriger
       setDraftList([]);

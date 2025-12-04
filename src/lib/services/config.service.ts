@@ -26,10 +26,10 @@ export interface EtablissementProfile {
   numeroDecret: string;
   type: string;
   adresse?: string;
-  telephone: string;
-  email: string;
-  createdAt: string;
-  updatedAt: string;
+  telephone?: string;
+  email?: string;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 }
 
 export class ConfigService {
@@ -43,6 +43,30 @@ export class ConfigService {
   ): Promise<EtablissementProfile> {
     return apiClient.get<EtablissementProfile>(
       API_ENDPOINTS.PROFILE.GET,
+      {
+        headers: cookieHeader ? { cookie: cookieHeader } : undefined,
+      }
+    );
+  }
+
+  /**
+   * Mettre à jour le profil de l'établissement
+   * @param updateData - Données à mettre à jour
+   * @param cookieHeader - Cookie header pour l'authentification (Server Components)
+   * @returns Profil mis à jour
+   */
+  async updateProfile(
+    updateData: {
+      nom?: string;
+      adresse?: string;
+      telephone?: string;
+      email?: string;
+    },
+    cookieHeader?: string
+  ): Promise<EtablissementProfile> {
+    return apiClient.put<EtablissementProfile>(
+      API_ENDPOINTS.PROFILE.UPDATE,
+      updateData,
       {
         headers: cookieHeader ? { cookie: cookieHeader } : undefined,
       }

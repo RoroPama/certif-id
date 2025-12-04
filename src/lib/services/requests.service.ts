@@ -75,7 +75,7 @@ export interface DemandeFilters {
   limit?: number;
 }
 
-export interface CreateDemandeDto {
+export interface CreateDocumentDto {
   documentTypeId: string;
   nomBeneficiaire: string;
   prenomBeneficiaire: string;
@@ -83,8 +83,12 @@ export interface CreateDemandeDto {
   lieuNaissance?: string;
   dateEmission: string;
   pdfOriginalUrl: string;
-  note?: string;
   matricule?: string;
+}
+
+export interface CreateDemandeDto {
+  documents: CreateDocumentDto[];
+  note?: string;
 }
 
 export interface DocumentDetail {
