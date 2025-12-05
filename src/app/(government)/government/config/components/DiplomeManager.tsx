@@ -13,6 +13,7 @@ import {
 import {
   configService,
   type DocumentTypeEntity,
+  NiveauEducation,
 } from "@/lib/services/config.service";
 import type {
   CreateDocumentTypeDto,
@@ -30,7 +31,9 @@ export default function DiplomeManager() {
     nom: "",
     description: "",
     prix: 0,
-    filiereId: "",
+    niveau: NiveauEducation.SECONDAIRE,
+    serie: "",
+    filiereIds: [],
   });
 
   useEffect(() => {
@@ -75,7 +78,9 @@ export default function DiplomeManager() {
       nom: "",
       description: "",
       prix: 0,
-      filiereId: "",
+      niveau: NiveauEducation.SECONDAIRE,
+      serie: "",
+      filiereIds: [],
     });
     setShowForm(true);
   };
@@ -86,7 +91,9 @@ export default function DiplomeManager() {
       nom: diplome.nom,
       description: diplome.description || "",
       prix: diplome.prix,
-      filiereId: diplome.filiereId || "",
+      niveau: diplome.niveau,
+      serie: diplome.serie || "",
+      filiereIds: diplome.filieres?.map((f) => f.id) || [],
     });
     setShowForm(true);
   };
@@ -189,25 +196,91 @@ export default function DiplomeManager() {
             </div>
             <div>
               <label className="text-xs font-medium text-slate-700 block mb-1">
-                Filière (optionnel)
+                Niveau d'éducation *
               </label>
               <select
-                value={formData.filiereId || ""}
+                required
+                value={formData.niveau}
                 onChange={(e) =>
-                  setFormData({ ...formData, filiereId: e.target.value || undefined })
+                  setFormData({
+                    ...formData,
+                    niveau: e.target.value as NiveauEducation,
+                    serie: formData.niveau === NiveauEducation.SECONDAIRE ? formData.serie : "",
+                    filiereIds: formData.niveau === NiveauEducation.UNIVERSITE ? formData.filiereIds : [],
+                  })
                 }
                 className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
               >
-                <option value="">Aucune filière</option>
-                {filieres
-                  .filter((f) => f.actif)
-                  .map((filiere) => (
-                    <option key={filiere.id} value={filiere.id}>
-                      {filiere.nom} {filiere.code && `(${filiere.code})`}
-                    </option>
-                  ))}
+                <option value={NiveauEducation.SECONDAIRE}>Secondaire</option>
+                <option value={NiveauEducation.UNIVERSITE}>Université</option>
               </select>
             </div>
+            {formData.niveau === NiveauEducation.SECONDAIRE && (
+              <div>
+                <label className="text-xs font-medium text-slate-700 block mb-1">
+                  Série (optionnel, ex: C, D, A pour BAC)
+                </label>
+                <input
+                  type="text"
+                  value={formData.serie || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, serie: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                  placeholder="Ex: C, D, A"
+                />
+              </div>
+            )}
+            {formData.niveau === NiveauEducation.UNIVERSITE && (
+              <div>
+                <label className="text-xs font-medium text-slate-700 block mb-1">
+                  Filières associées (peut être multiple)
+                </label>
+                <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-lg bg-white p-2 space-y-2">
+                  {filieres
+                    .filter((f) => f.actif)
+                    .map((filiere) => (
+                      <label
+                        key={filiere.id}
+                        className="flex items-center gap-2 p-2 hover:bg-slate-50 rounded cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={formData.filiereIds?.includes(filiere.id) || false}
+                          onChange={(e) => {
+                            const currentIds = formData.filiereIds || [];
+                            if (e.target.checked) {
+                              setFormData({
+                                ...formData,
+                                filiereIds: [...currentIds, filiere.id],
+                              });
+                            } else {
+                              setFormData({
+                                ...formData,
+                                filiereIds: currentIds.filter((id) => id !== filiere.id),
+                              });
+                            }
+                          }}
+                          className="w-4 h-4 text-emerald-600 border-slate-300 rounded focus:ring-emerald-500"
+                        />
+                        <span className="text-sm text-slate-700">
+                          {filiere.nom}
+                          {filiere.code && (
+                            <span className="text-xs text-slate-500 ml-2">
+                              ({filiere.code})
+                            </span>
+                          )}
+                        </span>
+                      </label>
+                    ))}
+                </div>
+                {formData.filiereIds && formData.filiereIds.length > 0 && (
+                  <p className="text-xs text-slate-500 mt-2">
+                    {formData.filiereIds.length} filière{formData.filiereIds.length > 1 ? "s" : ""} sélectionnée{formData.filiereIds.length > 1 ? "s" : ""}
+                  </p>
+                )}
+              </div>
+            )}
             <div>
               <label className="text-xs font-medium text-slate-700 block mb-1">
                 Prix de signature (XAF) *
@@ -272,12 +345,25 @@ export default function DiplomeManager() {
               className="bg-white rounded-lg p-4 border border-slate-200 flex items-center justify-between"
             >
               <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <h4 className="font-bold text-slate-900">{diplome.nom}</h4>
-                  {diplome.filiere && (
-                    <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs font-medium">
-                      {diplome.filiere.nom}
-                    </span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h4 className="font-bold text-slate-900">
+                    {diplome.nom}
+                    {diplome.serie && ` série ${diplome.serie}`}
+                  </h4>
+                  <span className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-xs font-medium">
+                    {diplome.niveau === NiveauEducation.SECONDAIRE ? "Secondaire" : "Université"}
+                  </span>
+                  {diplome.filieres && diplome.filieres.length > 0 && (
+                    <div className="flex gap-1 flex-wrap">
+                      {diplome.filieres.map((filiere) => (
+                        <span
+                          key={filiere.id}
+                          className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs font-medium"
+                        >
+                          {filiere.nom}
+                        </span>
+                      ))}
+                    </div>
                   )}
                 </div>
                 {diplome.description && (

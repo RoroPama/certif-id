@@ -21,18 +21,25 @@ export interface FiliereEntity {
   };
 }
 
+// Enum pour les niveaux d'éducation
+export enum NiveauEducation {
+  SECONDAIRE = 'SECONDAIRE',
+  UNIVERSITE = 'UNIVERSITE',
+}
+
 // Types pour les types de documents (diplômes)
 export interface DocumentTypeEntity {
   id: string;
   nom: string;
   description: string | null;
   prix: number;
-  filiereId?: string | null;
-  filiere?: {
+  niveau: NiveauEducation;
+  serie: string | null;
+  filieres?: {
     id: string;
     nom: string;
     code: string | null;
-  } | null;
+  }[];
   createdAt: Date | string;
   updatedAt: Date | string;
 }
@@ -56,14 +63,18 @@ export interface CreateDocumentTypeDto {
   nom: string;
   description?: string;
   prix: number;
-  filiereId?: string;
+  niveau: NiveauEducation;
+  serie?: string;
+  filiereIds?: string[];
 }
 
 export interface UpdateDocumentTypeDto {
   nom?: string;
   description?: string;
   prix?: number;
-  filiereId?: string;
+  niveau?: NiveauEducation;
+  serie?: string;
+  filiereIds?: string[];
 }
 
 export class ConfigService {

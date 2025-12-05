@@ -113,3 +113,4 @@ export function mapEtablissementsToUniversities(
   return etablissements.map(mapEtablissementToUniversity);
 }
 
+
