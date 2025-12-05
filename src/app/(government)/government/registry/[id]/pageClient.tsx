@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -16,35 +16,17 @@ import {
 } from "lucide-react";
 import { GOVERNMENT_ROUTES } from "@/lib/utils/constants";
 import { MESSAGES } from "@/lib/utils/messages";
-import { useGovernmentRegistry } from "../../hooks";
 import type { RegistryEntry } from "../../types";
 
 interface RegistryDetailPageClientProps {
-  entryId: string;
+  entry: RegistryEntry;
 }
 
 export default function RegistryDetailPageClient({
-  entryId,
+  entry,
 }: RegistryDetailPageClientProps) {
-  const { getEntryById } = useGovernmentRegistry();
-  const [entry, setEntry] = useState<RegistryEntry | null>(null);
   const { government } = MESSAGES;
   const detailMsg = government.pages.registry.detail;
-
-  useEffect(() => {
-    const data = getEntryById(entryId);
-    if (data) {
-      setEntry(data);
-    }
-  }, [entryId, getEntryById]);
-
-  if (!entry) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-slate-500">{MESSAGES.common.loading}</p>
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col h-[calc(100vh-200px)] animate-in fade-in slide-in-from-bottom-4 duration-500">

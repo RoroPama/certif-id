@@ -23,6 +23,7 @@ export const INSTITUTION_ROUTES = {
   OVERVIEW: "/institution/overview",
   REQUESTS: "/institution/requests",
   REQUEST_DETAIL: (id: string) => `/institution/requests/${id}`,
+  REQUEST_DETAILS: (id: string) => `/institution/requests/${id}/details`,
   REGISTRY: "/institution/registry",
   REGISTRY_DETAIL: (id: string) => `/institution/registry/${id}`,
   NEW_REQUEST: "/institution/new-request",

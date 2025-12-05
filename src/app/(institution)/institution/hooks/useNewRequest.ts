@@ -3,12 +3,15 @@
  */
 
 import { useState, useMemo } from "react";
-import type { StudentDraft, Filiere, AcademicYear, SubmittedRequest } from "../types";
+import { requestsService } from "@/lib/services/requests.service";
+import { uploadService } from "@/lib/services/upload.service";
+import type { StudentDraft, Filiere, AcademicYear } from "../types";
+import type { DemandeEntity } from "@/lib/services/requests.service";
 
 interface UseNewRequestProps {
   filieres: Filiere[];
   foundationYear: number;
-  onSubmitSuccess: (request: SubmittedRequest) => void;
+  onSubmitSuccess: () => void;
 }
 
 export function useNewRequest({ filieres, foundationYear, onSubmitSuccess }: UseNewRequestProps) {
@@ -19,6 +22,8 @@ export function useNewRequest({ filieres, foundationYear, onSubmitSuccess }: Use
     pdfFile: null,
     fileName: "",
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const years = useMemo(() => {
     const currentYear = new Date().getFullYear();
@@ -39,9 +44,10 @@ export function useNewRequest({ filieres, foundationYear, onSubmitSuccess }: Use
       !currentEntry.lastName ||
       !currentEntry.filiereId ||
       !currentEntry.diplomaId ||
-      !currentEntry.yearId
+      !currentEntry.yearId ||
+      !currentEntry.pdfFile
     ) {
-      alert("Veuillez remplir tous les champs obligatoires.");
+      alert("Veuillez remplir tous les champs obligatoires, y compris le fichier PDF.");
       return;
     }
     
@@ -76,32 +82,73 @@ export function useNewRequest({ filieres, foundationYear, onSubmitSuccess }: Use
     setDraftList(draftList.filter((d) => d.id !== id));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (draftList.length === 0) return;
 
-    const total = draftList.length;
-    const items = draftList.map((d, i) => ({
-      id: `NEW-${i}`,
-      studentName: `${d.firstName} ${d.lastName}`,
-      diplomaName: d.diplomaName,
-      status: "PENDING" as const,
-    }));
+    setIsSubmitting(true);
+    setError(null);
 
-    const newRequest: SubmittedRequest = {
-      id: Math.random().toString(),
-      reference: `BORD-2024-${Math.floor(Math.random() * 9000) + 1000}`,
-      submissionDate: new Date().toLocaleDateString("fr-FR"),
-      academicYear:
-        years.find((y) => y.id === draftList[0]?.yearId)?.label || "2023-2024",
-      totalCount: total,
-      approvedCount: 0,
-      rejectedCount: 0,
-      pendingCount: total,
-      items,
-    };
+    try {
+      // Uploader tous les PDFs et préparer les documents
+      const documentPromises = draftList.map(async (draft) => {
+        // 1. Uploader le PDF
+        if (!draft.pdfFile) {
+          throw new Error(
+            `Fichier PDF manquant pour ${draft.firstName} ${draft.lastName}`
+          );
+        }
 
-    onSubmitSuccess(newRequest);
-    setDraftList([]);
+        const pdfUrl = await uploadService.uploadPdf(draft.pdfFile);
+
+        // 2. Trouver le type de document correspondant au diplôme
+        // Le diplomaId est l'ID du type de document (mappé depuis les types de documents autorisés)
+        const documentTypeId = draft.diplomaId;
+
+        // Validation : vérifier que documentTypeId est un UUID valide
+        if (
+          !documentTypeId ||
+          !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+            documentTypeId
+          )
+        ) {
+          throw new Error(
+            `ID de type de document invalide pour ${draft.firstName} ${draft.lastName}. Veuillez sélectionner un type de document valide.`
+          );
+        }
+
+        // 3. Retourner les données du document
+        return {
+          documentTypeId,
+          nomBeneficiaire: draft.firstName,
+          prenomBeneficiaire: draft.lastName,
+          dateEmission: new Date().toISOString().split("T")[0], // Date d'aujourd'hui
+          pdfOriginalUrl: pdfUrl,
+          matricule: draft.yearId, // Utiliser l'année comme matricule temporaire
+        };
+      });
+
+      // Attendre que tous les uploads soient terminés
+      const documents = await Promise.all(documentPromises);
+
+      // Créer une seule demande avec tous les documents
+      const demande = await requestsService.createRequest({
+        documents,
+        note: `Demande groupée - ${draftList.length} document(s)`,
+      });
+
+      // Succès - rediriger
+      setDraftList([]);
+      onSubmitSuccess();
+    } catch (err) {
+      console.error("Erreur lors de la soumission:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Une erreur s'est produite lors de la soumission"
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return {
@@ -109,6 +156,8 @@ export function useNewRequest({ filieres, foundationYear, onSubmitSuccess }: Use
     currentEntry,
     years,
     filieres,
+    isSubmitting,
+    error,
     setCurrentEntry,
     handleAddDraft,
     handleRemoveDraft,

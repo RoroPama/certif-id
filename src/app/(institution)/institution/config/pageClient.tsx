@@ -6,28 +6,30 @@ import { useConfig } from "../hooks/useConfig";
 import FiliereDiplomasManager from "../components/FiliereDiplomasManager";
 
 export default function ConfigPageClient() {
-  const {
-    filieres,
-    foundationYear,
-    years,
-    handleAddFiliere,
-    handleAddDiploma,
-    handleDeleteDiploma,
-    handleDeleteFiliere,
-    handleFoundationYearChange,
-  } = useConfig();
+  const { filieres, foundationYear, years, isLoading, error } = useConfig();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-slate-500">Chargement de la configuration...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+        <p className="text-red-800 font-semibold">Erreur</p>
+        <p className="text-red-600 text-sm mt-2">{error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
       {/* Colonne gauche : Filières et Diplômes */}
       <div className="space-y-6">
-        <FiliereDiplomasManager
-          filieres={filieres}
-          onAddFiliere={handleAddFiliere}
-          onAddDiploma={handleAddDiploma}
-          onDeleteDiploma={handleDeleteDiploma}
-          onDeleteFiliere={handleDeleteFiliere}
-        />
+        <FiliereDiplomasManager filieres={filieres} />
       </div>
 
       {/* Colonne droite : Historique Académique */}
@@ -53,14 +55,13 @@ export default function ConfigPageClient() {
             </label>
             <div className="flex gap-4">
               <input
-                type="number"
+                type="text"
                 min="1900"
                 max={new Date().getFullYear()}
-                className="flex-1 px-4 py-3 border border-slate-200 rounded-lg text-slate-900 font-mono font-bold focus:ring-2 focus:ring-blue-900/10 outline-none"
+                readOnly
+                disabled
+                className="flex-1 px-4 py-3 border border-slate-200 rounded-lg text-slate-600 font-mono font-bold bg-slate-50 cursor-not-allowed"
                 value={foundationYear}
-                onChange={(e) =>
-                  handleFoundationYearChange(Number(e.target.value))
-                }
               />
               <div className="px-6 py-3 bg-slate-100 rounded-lg text-slate-500 text-sm flex items-center font-medium">
                 à {new Date().getFullYear()}
@@ -68,8 +69,8 @@ export default function ConfigPageClient() {
             </div>
             <p className="text-xs text-slate-400 leading-relaxed">
               <AlertCircle className="w-3 h-3 inline mr-1" />
-              Cette action mettra à jour automatiquement toutes les listes de
-              sélection d'années dans l'application.
+              Cette configuration est gérée par le ministère et ne peut pas être
+              modifiée depuis cette interface.
             </p>
           </div>
         </div>

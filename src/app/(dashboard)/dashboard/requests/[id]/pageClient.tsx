@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, Clock, Ban } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Clock, Ban, Eye } from "lucide-react";
 import type { SubmittedRequest } from "../../types";
 
 interface RequestDetailPageClientProps {
@@ -60,6 +60,7 @@ export default function RequestDetailPageClient({
               <th className="px-4 py-3 text-left">Diplôme Demandé</th>
               <th className="px-4 py-3 text-left">Statut</th>
               <th className="px-4 py-3 text-left">Observation</th>
+              <th className="px-4 py-3 text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
@@ -94,6 +95,15 @@ export default function RequestDetailPageClient({
                   ) : (
                     <span className="text-slate-300">-</span>
                   )}
+                </td>
+                <td className="px-4 py-3 text-right">
+                  <Link
+                    href={`/institution/requests/${request.id}/details?documentId=${item.id}`}
+                    className="text-blue-900 hover:bg-blue-100 p-2 rounded-full transition-colors inline-flex"
+                    title="Voir les détails"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </Link>
                 </td>
               </tr>
             ))}

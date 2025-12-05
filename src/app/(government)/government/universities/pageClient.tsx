@@ -26,6 +26,8 @@ export default function UniversitiesPageClient() {
     totalPages,
     search,
     typeFilter,
+    isLoading,
+    error,
     handleSearchChange,
     handleTypeFilterChange,
     handlePageChange,
@@ -33,6 +35,7 @@ export default function UniversitiesPageClient() {
   } = useUniversities();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { government } = MESSAGES;
 
   const getStatusBadge = (status: string) => {
@@ -121,31 +124,54 @@ export default function UniversitiesPageClient() {
 
         {/* Table */}
         <div className="flex-1 overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-white text-slate-500 font-bold uppercase tracking-wider text-xs border-b border-slate-200">
-              <tr>
-                <th className="px-6 py-4 text-left">
-                  {government.pages.universities.columns.institution}
-                </th>
-                <th className="px-6 py-4 text-left">
-                  {government.pages.universities.columns.type}
-                </th>
-                <th className="px-6 py-4 text-left">
-                  {government.pages.universities.columns.contact}
-                </th>
-                <th className="px-6 py-4 text-left">
-                  {government.pages.universities.columns.activity}
-                </th>
-                <th className="px-6 py-4 text-left">
-                  {government.pages.universities.columns.status}
-                </th>
-                <th className="px-6 py-4 text-right">
-                  {government.pages.universities.columns.actions}
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {universities.map((university) => (
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mb-4"></div>
+                <p className="text-sm text-slate-500">Chargement des établissements...</p>
+              </div>
+            </div>
+          ) : error ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <AlertTriangle className="w-12 h-12 text-rose-500 mx-auto mb-4" />
+                <p className="text-sm text-slate-700 font-medium mb-2">Erreur lors du chargement</p>
+                <p className="text-xs text-slate-500">{error}</p>
+              </div>
+            </div>
+          ) : universities.length === 0 ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <Building2 className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                <p className="text-sm text-slate-500">Aucun établissement trouvé</p>
+              </div>
+            </div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead className="bg-white text-slate-500 font-bold uppercase tracking-wider text-xs border-b border-slate-200">
+                <tr>
+                  <th className="px-6 py-4 text-left">
+                    {government.pages.universities.columns.institution}
+                  </th>
+                  <th className="px-6 py-4 text-left">
+                    {government.pages.universities.columns.type}
+                  </th>
+                  <th className="px-6 py-4 text-left">
+                    {government.pages.universities.columns.contact}
+                  </th>
+                  <th className="px-6 py-4 text-left">
+                    {government.pages.universities.columns.activity}
+                  </th>
+                  <th className="px-6 py-4 text-left">
+                    {government.pages.universities.columns.status}
+                  </th>
+                  <th className="px-6 py-4 text-right">
+                    {government.pages.universities.columns.actions}
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {universities.map((university) => (
                 <tr
                   key={university.id}
                   className="hover:bg-emerald-50/30 transition-colors"
@@ -202,8 +228,9 @@ export default function UniversitiesPageClient() {
                   </td>
                 </tr>
               ))}
-            </tbody>
-          </table>
+              </tbody>
+            </table>
+          )}
         </div>
 
         <PaginationControls
@@ -216,9 +243,17 @@ export default function UniversitiesPageClient() {
       {showCreateModal && (
         <CreateUniversityModal
           onClose={() => setShowCreateModal(false)}
-          onSubmit={(data) => {
-            addUniversity(data);
-            setShowCreateModal(false);
+          onSubmit={async (data) => {
+            try {
+              setIsSubmitting(true);
+              await addUniversity(data);
+              setShowCreateModal(false);
+            } catch (err) {
+              console.error("Erreur lors de la création:", err);
+              // L'erreur sera gérée par le hook
+            } finally {
+              setIsSubmitting(false);
+            }
           }}
         />
       )}
