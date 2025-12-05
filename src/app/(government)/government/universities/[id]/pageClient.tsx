@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Building2,
@@ -11,11 +12,25 @@ import {
   Plus,
   Trash2,
   X,
+  Loader2,
+  Mail,
+  Phone,
+  MapPin,
+  FileText,
+  GraduationCap,
 } from "lucide-react";
 import { GOVERNMENT_ROUTES } from "@/lib/utils/constants";
 import { MESSAGES } from "@/lib/utils/messages";
-import { useUniversities } from "../../hooks";
-import type { University, Filiere } from "../../types";
+import {
+  governmentService,
+  type EtablissementEntity,
+  type UpdateEtablissementDto,
+} from "@/lib/services/government.service";
+import {
+  configService,
+  type DocumentTypeEntity,
+  type ParcoursEntity,
+} from "@/lib/services/config.service";
 
 interface UniversityDetailPageClientProps {
   universityId: string;
@@ -24,83 +39,203 @@ interface UniversityDetailPageClientProps {
 export default function UniversityDetailPageClient({
   universityId,
 }: UniversityDetailPageClientProps) {
-  const {
-    getUniversityById,
-    updateUniversity,
-    updateUniversityStatus,
-    addFiliereToUniversity,
-    removeFiliereFromUniversity,
-  } = useUniversities();
+  const router = useRouter();
+  const [etablissement, setEtablissement] =
+    useState<EtablissementEntity | null>(null);
+  const [allDocumentTypes, setAllDocumentTypes] = useState<
+    DocumentTypeEntity[]
+  >([]);
+  const [allParcours, setAllParcours] = useState<ParcoursEntity[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
-  const [university, setUniversity] = useState<University | null>(null);
-  const [editedData, setEditedData] = useState<Partial<University>>({});
-  const [showAddFiliere, setShowAddFiliere] = useState(false);
-  const [newFiliere, setNewFiliere] = useState({ name: "", diploma: "" });
-  const [tempDiplomas, setTempDiplomas] = useState<string[]>([]);
-  const { government } = MESSAGES;
-  const detailMsg = government.pages.universities.detail;
+  // État pour les modifications
+  const [editedData, setEditedData] = useState<UpdateEtablissementDto>({});
+  const [selectedDocumentTypes, setSelectedDocumentTypes] = useState<string[]>(
+    []
+  );
+  const [selectedParcours, setSelectedParcours] = useState<string[]>([]);
+  const [showAddDocument, setShowAddDocument] = useState(false);
+  const [showAddParcours, setShowAddParcours] = useState(false);
+
+  // Récupérer le cookie pour l'authentification
+  const getCookieHeader = () => {
+    if (typeof document !== "undefined") {
+      return document.cookie;
+    }
+    return "";
+  };
 
   useEffect(() => {
-    const data = getUniversityById(universityId);
-    if (data) {
-      setUniversity(data);
-      setEditedData(data);
-    }
-  }, [universityId, getUniversityById]);
+    loadData();
+  }, [universityId]);
 
-  if (!university) {
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const cookieHeader = getCookieHeader();
+
+      // Charger l'établissement, les types de documents et les parcours en parallèle
+      const [etablissementData, documentTypesData, parcoursData] =
+        await Promise.all([
+          governmentService.getEtablissementById(universityId, cookieHeader),
+          configService.getAllDocumentTypes(cookieHeader),
+          configService.getAllParcours(cookieHeader),
+        ]);
+
+      setEtablissement(etablissementData);
+      setAllDocumentTypes(documentTypesData);
+      setAllParcours(parcoursData);
+
+      // Initialiser les données modifiables
+      setEditedData({
+        nom: etablissementData.nom,
+        numeroDecret: etablissementData.numeroDecret,
+        type: etablissementData.type,
+        adresse: etablissementData.adresse || undefined,
+        telephone: etablissementData.telephone,
+        email: etablissementData.email,
+      });
+
+      // Initialiser les types de documents sélectionnés
+      const docTypeNames =
+        etablissementData.documentsAutorises?.map(
+          (da) => da.documentType.nom
+        ) || [];
+      setSelectedDocumentTypes(docTypeNames);
+
+      // Initialiser les parcours sélectionnés (si disponibles dans la réponse)
+      // Note: Le backend retourne les parcours dans etablissement.parcours
+      const etablissementParcours = etablissementData.parcours || [];
+      const parcoursNames = etablissementParcours.map((p) => p.parcours.nom);
+      setSelectedParcours(parcoursNames);
+    } catch (err: any) {
+      console.error("Erreur lors du chargement:", err);
+      setError(err.message || "Erreur lors du chargement des données");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      setError(null);
+      setSuccess(null);
+      const cookieHeader = getCookieHeader();
+
+      // Préparer les données de mise à jour
+      const updateData: UpdateEtablissementDto = {
+        ...editedData,
+        documentTypeNames: selectedDocumentTypes,
+        parcoursNames: selectedParcours,
+      };
+
+      const updated = await governmentService.updateEtablissement(
+        universityId,
+        updateData,
+        cookieHeader
+      );
+
+      setEtablissement(updated);
+      setSuccess("Établissement mis à jour avec succès !");
+
+      // Recharger les données pour avoir les dernières informations
+      setTimeout(() => {
+        loadData();
+      }, 1000);
+    } catch (err: any) {
+      console.error("Erreur lors de la sauvegarde:", err);
+      setError(err.message || "Erreur lors de la sauvegarde");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAddDocumentType = (docTypeName: string) => {
+    if (!selectedDocumentTypes.includes(docTypeName)) {
+      setSelectedDocumentTypes([...selectedDocumentTypes, docTypeName]);
+    }
+    setShowAddDocument(false);
+  };
+
+  const handleRemoveDocumentType = (docTypeName: string) => {
+    setSelectedDocumentTypes(
+      selectedDocumentTypes.filter((name) => name !== docTypeName)
+    );
+  };
+
+  const handleAddParcours = (parcoursName: string) => {
+    if (!selectedParcours.includes(parcoursName)) {
+      setSelectedParcours([...selectedParcours, parcoursName]);
+    }
+    setShowAddParcours(false);
+  };
+
+  const handleRemoveParcours = (parcoursName: string) => {
+    setSelectedParcours(
+      selectedParcours.filter((name) => name !== parcoursName)
+    );
+  };
+
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-slate-500">{MESSAGES.common.loading}</p>
+        <Loader2 className="w-6 h-6 animate-spin text-emerald-600" />
+        <p className="ml-3 text-slate-500">{MESSAGES.common.loading}</p>
       </div>
     );
   }
 
-  const handleSave = () => {
-    updateUniversity(universityId, editedData);
-    alert("Modifications enregistrées !");
-  };
-
-  const handleStatusChange = (status: "ACTIVE" | "SUSPENDED") => {
-    updateUniversityStatus(universityId, status);
-    setUniversity((prev) => (prev ? { ...prev, status } : null));
-  };
-
-  const handleAddDiploma = () => {
-    if (newFiliere.diploma.trim()) {
-      setTempDiplomas((prev) => [...prev, newFiliere.diploma.trim()]);
-      setNewFiliere((prev) => ({ ...prev, diploma: "" }));
-    }
-  };
-
-  const handleSaveFiliere = () => {
-    if (newFiliere.name.trim() && tempDiplomas.length > 0) {
-      const filiere: Filiere = {
-        id: `fil-${Date.now()}`,
-        name: newFiliere.name.trim(),
-        diplomas: tempDiplomas,
-      };
-      addFiliereToUniversity(universityId, filiere);
-      setUniversity((prev) =>
-        prev ? { ...prev, filieres: [...prev.filieres, filiere] } : null
-      );
-      setNewFiliere({ name: "", diploma: "" });
-      setTempDiplomas([]);
-      setShowAddFiliere(false);
-    }
-  };
-
-  const handleRemoveFiliere = (filiereId: string) => {
-    removeFiliereFromUniversity(universityId, filiereId);
-    setUniversity((prev) =>
-      prev
-        ? { ...prev, filieres: prev.filieres.filter((f) => f.id !== filiereId) }
-        : null
+  if (error && !etablissement) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 space-y-4">
+        <AlertTriangle className="w-12 h-12 text-rose-500" />
+        <p className="text-rose-600 font-medium">{error}</p>
+        <button
+          onClick={loadData}
+          className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+        >
+          Réessayer
+        </button>
+      </div>
     );
-  };
+  }
+
+  if (!etablissement) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-slate-500">Établissement introuvable</p>
+      </div>
+    );
+  }
+
+  const availableDocumentTypes = allDocumentTypes.filter(
+    (dt) => !selectedDocumentTypes.includes(dt.nom)
+  );
+  const availableParcours = allParcours.filter(
+    (p) => !selectedParcours.includes(p.nom)
+  );
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Messages de succès/erreur */}
+      {success && (
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-lg flex items-center gap-2">
+          <CheckCircle2 className="w-5 h-5" />
+          <p>{success}</p>
+        </div>
+      )}
+      {error && (
+        <div className="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-lg flex items-center gap-2">
+          <AlertTriangle className="w-5 h-5" />
+          <p>{error}</p>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -116,92 +251,120 @@ export default function UniversityDetailPageClient({
             </div>
             <div>
               <h2 className="text-xl font-serif font-bold text-slate-900">
-                {university.name}
+                {etablissement.nom}
               </h2>
               <p className="text-sm text-slate-500">
-                {university.city} •{" "}
-                <span
-                  className={`font-medium ${
-                    university.type === "PUBLIC"
-                      ? "text-blue-600"
-                      : "text-purple-600"
-                  }`}
-                >
-                  {university.type}
+                {etablissement.adresse || "Adresse non renseignée"} •{" "}
+                <span className="font-medium text-blue-600">
+                  {etablissement.type}
                 </span>
               </p>
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          {university.status === "ACTIVE" ? (
-            <button
-              onClick={() => handleStatusChange("SUSPENDED")}
-              className="px-4 py-2 border border-rose-200 text-rose-700 rounded-lg hover:bg-rose-50 transition-colors text-sm font-medium flex items-center gap-2"
-            >
-              <AlertTriangle className="w-4 h-4" />
-              {detailMsg.suspend}
-            </button>
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors text-sm font-medium flex items-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {saving ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Enregistrement...
+            </>
           ) : (
-            <button
-              onClick={() => handleStatusChange("ACTIVE")}
-              className="px-4 py-2 border border-emerald-200 text-emerald-700 rounded-lg hover:bg-emerald-50 transition-colors text-sm font-medium flex items-center gap-2"
-            >
-              <CheckCircle2 className="w-4 h-4" />
-              {detailMsg.activate}
-            </button>
+            <>
+              <Save className="w-4 h-4" />
+              Enregistrer
+            </>
           )}
-          <button
-            onClick={handleSave}
-            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors text-sm font-medium flex items-center gap-2 shadow-sm"
-          >
-            <Save className="w-4 h-4" />
-            {detailMsg.save}
-          </button>
-        </div>
+        </button>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {/* Configuration Générale */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
           <h3 className="font-serif font-bold text-lg text-slate-900 mb-6">
-            {detailMsg.generalConfig}
+            Informations générales
           </h3>
           <div className="space-y-4">
             <div>
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">
-                {government.pages.universities.create.fields.name}
+                Nom de l'établissement
               </label>
               <input
                 type="text"
                 className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 outline-none"
-                value={editedData.name || ""}
+                value={editedData.nom || ""}
                 onChange={(e) =>
-                  setEditedData((p) => ({ ...p, name: e.target.value }))
+                  setEditedData((p) => ({ ...p, nom: e.target.value }))
+                }
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">
+                Numéro de décret
+              </label>
+              <input
+                type="text"
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 outline-none"
+                value={editedData.numeroDecret || ""}
+                onChange={(e) =>
+                  setEditedData((p) => ({ ...p, numeroDecret: e.target.value }))
                 }
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">
-                  {government.pages.universities.create.fields.rector}
+                  Type
                 </label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 outline-none"
-                  value={editedData.rector || ""}
+                <select
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none"
+                  value={editedData.type || etablissement.type}
                   onChange={(e) =>
-                    setEditedData((p) => ({ ...p, rector: e.target.value }))
+                    setEditedData((p) => ({
+                      ...p,
+                      type: e.target.value as any,
+                    }))
                   }
-                />
+                >
+                  <option value="PUBLIC">Public</option>
+                  <option value="PRIVE">Privé</option>
+                  <option value="UNIVERSITE">Université</option>
+                  <option value="ECOLE_TECHNIQUE">École Technique</option>
+                  <option value="LYCEE">Lycée</option>
+                </select>
               </div>
               <div>
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">
-                  {government.pages.universities.create.fields.email}
+                  Téléphone
                 </label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="tel"
+                    className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 outline-none"
+                    value={editedData.telephone || ""}
+                    onChange={(e) =>
+                      setEditedData((p) => ({
+                        ...p,
+                        telephone: e.target.value,
+                      }))
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">
+                Email
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
                   type="email"
-                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 outline-none"
+                  className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 outline-none"
                   value={editedData.email || ""}
                   onChange={(e) =>
                     setEditedData((p) => ({ ...p, email: e.target.value }))
@@ -209,171 +372,233 @@ export default function UniversityDetailPageClient({
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">
-                  {government.pages.universities.create.fields.city}
-                </label>
+            <div>
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">
+                Adresse
+              </label>
+              <div className="relative">
+                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
                   type="text"
-                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 outline-none"
-                  value={editedData.city || ""}
+                  className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 outline-none"
+                  value={editedData.adresse || ""}
                   onChange={(e) =>
-                    setEditedData((p) => ({ ...p, city: e.target.value }))
+                    setEditedData((p) => ({ ...p, adresse: e.target.value }))
                   }
                 />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">
-                  {government.pages.universities.create.fields.type}
-                </label>
-                <select
-                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none"
-                  value={editedData.type || "PUBLIC"}
-                  onChange={(e) =>
-                    setEditedData((p) => ({
-                      ...p,
-                      type: e.target.value as "PUBLIC" | "PRIVE",
-                    }))
-                  }
-                >
-                  <option value="PUBLIC">Public</option>
-                  <option value="PRIVE">Privé</option>
-                </select>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Offre de Formation */}
+        {/* Types de documents autorisés */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="font-serif font-bold text-lg text-slate-900">
-              {detailMsg.academicPrograms}
-            </h3>
+            <div className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-emerald-600" />
+              <h3 className="font-serif font-bold text-lg text-slate-900">
+                Types de documents autorisés
+              </h3>
+            </div>
             <button
-              onClick={() => setShowAddFiliere(!showAddFiliere)}
+              onClick={() => setShowAddDocument(!showAddDocument)}
               className="px-3 py-1.5 text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors text-sm font-medium flex items-center gap-1"
             >
               <Plus className="w-4 h-4" />
-              {detailMsg.addNewFiliere}
+              Ajouter
             </button>
           </div>
 
-          {/* Formulaire d'ajout de filière */}
-          {showAddFiliere && (
+          {/* Liste déroulante pour ajouter un type de document */}
+          {showAddDocument && (
             <div className="bg-slate-50 rounded-lg p-4 mb-4 space-y-3 animate-in slide-in-from-top-2 duration-200">
               <div className="flex justify-between items-center">
                 <p className="text-sm font-bold text-slate-700">
-                  {detailMsg.addNewFiliere}
+                  Sélectionner un type de document
                 </p>
                 <button
-                  onClick={() => setShowAddFiliere(false)}
+                  onClick={() => setShowAddDocument(false)}
                   className="text-slate-400 hover:text-slate-600"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
-              <input
-                type="text"
-                placeholder={
-                  government.pages.universities.create.placeholders.filiere
-                }
+              <select
                 className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 outline-none bg-white"
-                value={newFiliere.name}
-                onChange={(e) =>
-                  setNewFiliere((p) => ({ ...p, name: e.target.value }))
-                }
-              />
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder={
-                    government.pages.universities.create.placeholders.diploma
+                onChange={(e) => {
+                  if (e.target.value) {
+                    handleAddDocumentType(e.target.value);
                   }
-                  className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 outline-none bg-white"
-                  value={newFiliere.diploma}
-                  onChange={(e) =>
-                    setNewFiliere((p) => ({ ...p, diploma: e.target.value }))
-                  }
-                  onKeyDown={(e) => e.key === "Enter" && handleAddDiploma()}
-                />
-                <button
-                  onClick={handleAddDiploma}
-                  className="px-3 py-2 bg-slate-200 hover:bg-slate-300 rounded-lg transition-colors"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
-              </div>
-              {tempDiplomas.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {tempDiplomas.map((d, i) => (
-                    <span
-                      key={i}
-                      className="px-2 py-1 bg-emerald-50 text-emerald-700 rounded text-xs flex items-center gap-1"
-                    >
-                      {d}
-                      <button
-                        onClick={() =>
-                          setTempDiplomas((p) => p.filter((_, idx) => idx !== i))
-                        }
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
-              <button
-                onClick={handleSaveFiliere}
-                disabled={!newFiliere.name || tempDiplomas.length === 0}
-                className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                }}
+                value=""
               >
-                {detailMsg.saveFiliere}
-              </button>
+                <option value="">Sélectionner un type de document</option>
+                {availableDocumentTypes.map((dt) => (
+                  <option key={dt.id} value={dt.nom}>
+                    {dt.nom}
+                  </option>
+                ))}
+              </select>
             </div>
           )}
 
-          {/* Liste des filières */}
+          {/* Liste des types de documents sélectionnés */}
           <div className="space-y-3">
-            {university.filieres.length > 0 ? (
-              university.filieres.map((filiere) => (
-                <div
-                  key={filiere.id}
-                  className="border border-slate-200 rounded-lg p-4 hover:border-emerald-200 transition-colors group"
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="font-bold text-slate-900">{filiere.name}</p>
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        {filiere.diplomas.map((diploma, i) => (
-                          <span
-                            key={i}
-                            className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-xs"
-                          >
-                            {diploma}
-                          </span>
-                        ))}
+            {selectedDocumentTypes.length > 0 ? (
+              selectedDocumentTypes.map((docTypeName) => {
+                const docType = allDocumentTypes.find(
+                  (dt) => dt.nom === docTypeName
+                );
+                return (
+                  <div
+                    key={docTypeName}
+                    className="border border-slate-200 rounded-lg p-4 hover:border-emerald-200 transition-colors group"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-bold text-slate-900">
+                          {docTypeName}
+                        </p>
                       </div>
+                      <button
+                        onClick={() => handleRemoveDocumentType(docTypeName)}
+                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors opacity-0 group-hover:opacity-100"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
-                    <button
-                      onClick={() => handleRemoveFiliere(filiere.id)}
-                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors opacity-0 group-hover:opacity-100"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
                   </div>
-                </div>
-              ))
+                );
+              })
             ) : (
               <p className="text-sm text-slate-400 text-center py-8">
-                {detailMsg.noFilieres}
+                Aucun type de document autorisé
               </p>
             )}
+          </div>
+        </div>
+
+        {/* Parcours associés */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+          <div className="flex justify-between items-center mb-6">
+            <div className="flex items-center gap-2">
+              <GraduationCap className="w-5 h-5 text-emerald-600" />
+              <h3 className="font-serif font-bold text-lg text-slate-900">
+                Parcours d'études
+              </h3>
+            </div>
+            <button
+              onClick={() => setShowAddParcours(!showAddParcours)}
+              className="px-3 py-1.5 text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors text-sm font-medium flex items-center gap-1"
+            >
+              <Plus className="w-4 h-4" />
+              Ajouter
+            </button>
+          </div>
+
+          {/* Liste déroulante pour ajouter un parcours */}
+          {showAddParcours && (
+            <div className="bg-slate-50 rounded-lg p-4 mb-4 space-y-3 animate-in slide-in-from-top-2 duration-200">
+              <div className="flex justify-between items-center">
+                <p className="text-sm font-bold text-slate-700">
+                  Sélectionner un parcours
+                </p>
+                <button
+                  onClick={() => setShowAddParcours(false)}
+                  className="text-slate-400 hover:text-slate-600"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <select
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 outline-none bg-white"
+                onChange={(e) => {
+                  if (e.target.value) {
+                    handleAddParcours(e.target.value);
+                  }
+                }}
+                value=""
+              >
+                <option value="">Sélectionner un parcours</option>
+                {availableParcours.map((p) => (
+                  <option key={p.id} value={p.nom}>
+                    {p.nom} - {p.duree}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Liste des parcours sélectionnés */}
+          <div className="space-y-3">
+            {selectedParcours.length > 0 ? (
+              selectedParcours.map((parcoursName) => {
+                const parcours = allParcours.find(
+                  (p) => p.nom === parcoursName
+                );
+                return (
+                  <div
+                    key={parcoursName}
+                    className="border border-slate-200 rounded-lg p-4 hover:border-emerald-200 transition-colors group"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-bold text-slate-900">
+                          {parcoursName}
+                        </p>
+                        {parcours && (
+                          <p className="text-sm text-slate-500 mt-1">
+                            Durée: {parcours.duree}
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleRemoveParcours(parcoursName)}
+                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors opacity-0 group-hover:opacity-100"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <p className="text-sm text-slate-400 text-center py-8">
+                Aucun parcours associé
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Statistiques */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+          <h3 className="font-serif font-bold text-lg text-slate-900 mb-6">
+            Statistiques
+          </h3>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center p-4 bg-slate-50 rounded-lg">
+              <span className="text-sm text-slate-600">Utilisateurs</span>
+              <span className="font-bold text-slate-900">
+                {etablissement._count?.users || 0}
+              </span>
+            </div>
+            <div className="flex justify-between items-center p-4 bg-slate-50 rounded-lg">
+              <span className="text-sm text-slate-600">Demandes</span>
+              <span className="font-bold text-slate-900">
+                {etablissement._count?.demandes || 0}
+              </span>
+            </div>
+            <div className="flex justify-between items-center p-4 bg-slate-50 rounded-lg">
+              <span className="text-sm text-slate-600">
+                Documents autorisés
+              </span>
+              <span className="font-bold text-slate-900">
+                {etablissement._count?.documentsAutorises || 0}
+              </span>
+            </div>
           </div>
         </div>
       </div>
     </div>
   );
 }
-
