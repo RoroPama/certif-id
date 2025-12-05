@@ -15,7 +15,7 @@ import { MESSAGES } from "@/lib/utils/messages";
 import { configService } from "@/lib/services/config.service";
 import type { UniversityFormData, Filiere } from "../types";
 import type {
-  FiliereEntity,
+  ParcoursEntity,
   DocumentTypeEntity,
 } from "@/lib/services/config.service";
 
@@ -39,32 +39,32 @@ export default function CreateUniversityModal({
     address: "",
     filieres: [],
   });
-  const [availableFilieres, setAvailableFilieres] = useState<FiliereEntity[]>(
+  const [availableParcours, setAvailableParcours] = useState<ParcoursEntity[]>(
     []
   );
   const [availableDiplomes, setAvailableDiplomes] = useState<
     DocumentTypeEntity[]
   >([]);
-  const [selectedFiliereId, setSelectedFiliereId] = useState<string>("");
+  const [selectedParcoursId, setSelectedParcoursId] = useState<string>("");
   const [selectedDiplomeIds, setSelectedDiplomeIds] = useState<string[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const { government } = MESSAGES;
   const createMsg = government.pages.universities.create;
 
-  // Charger les filières et diplômes disponibles
+  // Charger les parcours et diplômes disponibles
   useEffect(() => {
     const loadData = async () => {
       try {
         setIsLoadingData(true);
-        const [filieres, diplomes] = await Promise.all([
-          configService.getAllFilieres(),
+        const [parcours, diplomes] = await Promise.all([
+          configService.getAllParcours(),
           configService.getAllDocumentTypes(),
         ]);
-        setAvailableFilieres(filieres.filter((f) => f.actif));
+        setAvailableParcours(parcours);
         setAvailableDiplomes(diplomes);
       } catch (err) {
         console.error(
-          "Erreur lors du chargement des filières et diplômes:",
+          "Erreur lors du chargement des parcours et diplômes:",
           err
         );
       } finally {
@@ -74,29 +74,29 @@ export default function CreateUniversityModal({
     loadData();
   }, []);
 
-  const handleAddFiliereAndDiplomes = () => {
-    if (selectedFiliereId && selectedDiplomeIds.length > 0) {
-      const filiere = availableFilieres.find((f) => f.id === selectedFiliereId);
-      if (filiere) {
+  const handleAddParcoursAndDiplomes = () => {
+    if (selectedParcoursId && selectedDiplomeIds.length > 0) {
+      const parcours = availableParcours.find((p) => p.id === selectedParcoursId);
+      if (parcours) {
         const selectedDiplomes = availableDiplomes.filter((d) =>
           selectedDiplomeIds.includes(d.id)
         );
-        const filiereData: Filiere = {
-          id: filiere.id,
-          name: filiere.nom,
+        const parcoursData: Filiere = {
+          id: parcours.id,
+          name: parcours.nom,
           diplomas: selectedDiplomes.map((d) => d.nom),
         };
         setFormData((prev) => ({
           ...prev,
-          filieres: [...(prev.filieres || []), filiereData],
+          filieres: [...(prev.filieres || []), parcoursData],
         }));
-        setSelectedFiliereId("");
+        setSelectedParcoursId("");
         setSelectedDiplomeIds([]);
       }
     }
   };
 
-  const handleRemoveFiliere = (id: string) => {
+  const handleRemoveParcours = (id: string) => {
     setFormData((prev) => ({
       ...prev,
       filieres: prev.filieres?.filter((f) => f.id !== id) || [],
@@ -111,12 +111,8 @@ export default function CreateUniversityModal({
     );
   };
 
-  // Filtrer les diplômes selon la filière sélectionnée
-  const availableDiplomesForFiliere = selectedFiliereId
-    ? availableDiplomes.filter(
-        (d) => d.filiereId === selectedFiliereId || !d.filiereId
-      )
-    : availableDiplomes;
+  // Tous les diplômes sont disponibles (les parcours ne filtrent pas les diplômes)
+  const availableDiplomesForParcours = availableDiplomes;
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -323,37 +319,37 @@ export default function CreateUniversityModal({
                   <div className="bg-slate-50 rounded-lg p-4 space-y-4">
                     <div>
                       <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">
-                        Sélectionner une filière
+                        Sélectionner un parcours
                       </label>
                       <select
                         className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 outline-none bg-white"
-                        value={selectedFiliereId}
+                        value={selectedParcoursId}
                         onChange={(e) => {
-                          setSelectedFiliereId(e.target.value);
+                          setSelectedParcoursId(e.target.value);
                           setSelectedDiplomeIds([]);
                         }}
                       >
-                        <option value="">Sélectionner une filière</option>
-                        {availableFilieres.map((f) => (
-                          <option key={f.id} value={f.id}>
-                            {f.nom} {f.code && `(${f.code})`}
+                        <option value="">Sélectionner un parcours</option>
+                        {availableParcours.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.nom} ({p.duree})
                           </option>
                         ))}
                       </select>
                     </div>
 
-                    {selectedFiliereId && (
+                    {selectedParcoursId && (
                       <div>
                         <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">
                           Sélectionner les diplômes autorisés
                         </label>
                         <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-lg bg-white p-2 space-y-2">
-                          {availableDiplomesForFiliere.length === 0 ? (
+                          {availableDiplomesForParcours.length === 0 ? (
                             <p className="text-xs text-slate-400 text-center py-2">
-                              Aucun diplôme disponible pour cette filière
+                              Aucun diplôme disponible
                             </p>
                           ) : (
-                            availableDiplomesForFiliere.map((diplome) => (
+                            availableDiplomesForParcours.map((diplome) => (
                               <label
                                 key={diplome.id}
                                 className="flex items-center gap-2 p-2 hover:bg-slate-50 rounded cursor-pointer"
@@ -392,14 +388,14 @@ export default function CreateUniversityModal({
                     )}
 
                     <button
-                      onClick={handleAddFiliereAndDiplomes}
+                      onClick={handleAddParcoursAndDiplomes}
                       disabled={
-                        !selectedFiliereId || selectedDiplomeIds.length === 0
+                        !selectedParcoursId || selectedDiplomeIds.length === 0
                       }
                       className="w-full py-2.5 border-2 border-dashed border-emerald-300 text-emerald-700 rounded-lg hover:bg-emerald-50 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Plus className="w-4 h-4 inline mr-2" />
-                      Ajouter la filière et ses diplômes
+                      Ajouter le parcours et ses diplômes
                     </button>
                   </div>
                 )}
@@ -424,7 +420,7 @@ export default function CreateUniversityModal({
                           </p>
                         </div>
                         <button
-                          onClick={() => handleRemoveFiliere(filiere.id)}
+                          onClick={() => handleRemoveParcours(filiere.id)}
                           className="p-1 text-slate-400 hover:text-rose-600 transition-colors"
                         >
                           <Trash2 className="w-4 h-4" />

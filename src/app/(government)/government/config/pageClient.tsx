@@ -3,7 +3,7 @@
 import React from "react";
 import { Shield, GraduationCap, Award } from "lucide-react";
 import TwoFactorAuthSection from "./components/TwoFactorAuthSection";
-import FiliereManager from "./components/FiliereManager";
+import ParcoursManager from "./components/ParcoursManager";
 import DiplomeManager from "./components/DiplomeManager";
 
 export default function ConfigPageClient() {
@@ -38,7 +38,7 @@ export default function ConfigPageClient() {
             <TwoFactorAuthSection />
           </div>
 
-          {/* Section Filières */}
+          {/* Section Parcours */}
           <div className="space-y-4 pt-6 border-t border-slate-200">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
@@ -46,14 +46,14 @@ export default function ConfigPageClient() {
               </div>
               <div>
                 <h3 className="font-bold text-lg text-slate-900">
-                  Gestion des Filières
+                  Gestion des Parcours
                 </h3>
                 <p className="text-sm text-slate-500">
-                  Définissez les filières académiques disponibles dans la plateforme
+                  Définissez les parcours académiques disponibles dans la plateforme
                 </p>
               </div>
             </div>
-            <FiliereManager />
+            <ParcoursManager />
           </div>
 
           {/* Section Diplômes */}
@@ -67,7 +67,7 @@ export default function ConfigPageClient() {
                   Gestion des Diplômes
                 </h3>
                 <p className="text-sm text-slate-500">
-                  Configurez les types de diplômes et leurs associations aux filières
+                  Configurez les types de diplômes et leurs associations aux parcours
                 </p>
               </div>
             </div>
@@ -78,5 +78,6 @@ export default function ConfigPageClient() {
     </div>
   );
 }
+
 
 

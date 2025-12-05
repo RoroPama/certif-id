@@ -22,7 +22,7 @@ import type {
 
 export default function DiplomeManager() {
   const [diplomes, setDiplomes] = useState<DocumentTypeEntity[]>([]);
-  const [filieres, setFilieres] = useState<any[]>([]);
+  const [parcours, setParcours] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -33,7 +33,7 @@ export default function DiplomeManager() {
     prix: 0,
     niveau: NiveauEducation.SECONDAIRE,
     serie: "",
-    filiereIds: [],
+    parcoursIds: [],
   });
 
   useEffect(() => {
@@ -44,12 +44,12 @@ export default function DiplomeManager() {
     try {
       setIsLoading(true);
       setError(null);
-      const [diplomesData, filieresData] = await Promise.all([
+      const [diplomesData, parcoursData] = await Promise.all([
         configService.getAllDocumentTypes(),
-        configService.getAllFilieres(),
+        configService.getAllParcours(),
       ]);
       setDiplomes(diplomesData || []);
-      setFilieres(filieresData || []);
+      setParcours(parcoursData || []);
     } catch (err: any) {
       console.error("Erreur lors du chargement des données:", err);
       let errorMessage = "Erreur lors du chargement des données";
@@ -66,7 +66,7 @@ export default function DiplomeManager() {
       
       setError(errorMessage);
       setDiplomes([]);
-      setFilieres([]);
+      setParcours([]);
     } finally {
       setIsLoading(false);
     }
@@ -80,7 +80,7 @@ export default function DiplomeManager() {
       prix: 0,
       niveau: NiveauEducation.SECONDAIRE,
       serie: "",
-      filiereIds: [],
+      parcoursIds: [],
     });
     setShowForm(true);
   };
@@ -93,7 +93,7 @@ export default function DiplomeManager() {
       prix: diplome.prix,
       niveau: diplome.niveau,
       serie: diplome.serie || "",
-      filiereIds: diplome.filieres?.map((f) => f.id) || [],
+      parcoursIds: diplome.parcours?.map((p) => p.id) || [],
     });
     setShowForm(true);
   };
@@ -147,7 +147,7 @@ export default function DiplomeManager() {
             {diplomes.length} diplôme{diplomes.length !== 1 ? "s" : ""} configuré{diplomes.length !== 1 ? "s" : ""}
           </p>
           <p className="text-sm text-slate-500">
-            Gérez les types de diplômes et leurs associations aux filières
+            Gérez les types de diplômes et leurs associations aux parcours
           </p>
         </div>
         <button
@@ -206,7 +206,7 @@ export default function DiplomeManager() {
                     ...formData,
                     niveau: e.target.value as NiveauEducation,
                     serie: formData.niveau === NiveauEducation.SECONDAIRE ? formData.serie : "",
-                    filiereIds: formData.niveau === NiveauEducation.UNIVERSITE ? formData.filiereIds : [],
+                    parcoursIds: formData.niveau === NiveauEducation.UNIVERSITE ? formData.parcoursIds : [],
                   })
                 }
                 className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
@@ -234,49 +234,45 @@ export default function DiplomeManager() {
             {formData.niveau === NiveauEducation.UNIVERSITE && (
               <div>
                 <label className="text-xs font-medium text-slate-700 block mb-1">
-                  Filières associées (peut être multiple)
+                  Parcours associés (peut être multiple)
                 </label>
                 <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-lg bg-white p-2 space-y-2">
-                  {filieres
-                    .filter((f) => f.actif)
-                    .map((filiere) => (
+                  {parcours.map((parcoursItem) => (
                       <label
-                        key={filiere.id}
+                        key={parcoursItem.id}
                         className="flex items-center gap-2 p-2 hover:bg-slate-50 rounded cursor-pointer"
                       >
                         <input
                           type="checkbox"
-                          checked={formData.filiereIds?.includes(filiere.id) || false}
+                          checked={formData.parcoursIds?.includes(parcoursItem.id) || false}
                           onChange={(e) => {
-                            const currentIds = formData.filiereIds || [];
+                            const currentIds = formData.parcoursIds || [];
                             if (e.target.checked) {
                               setFormData({
                                 ...formData,
-                                filiereIds: [...currentIds, filiere.id],
+                                parcoursIds: [...currentIds, parcoursItem.id],
                               });
                             } else {
                               setFormData({
                                 ...formData,
-                                filiereIds: currentIds.filter((id) => id !== filiere.id),
+                                parcoursIds: currentIds.filter((id) => id !== parcoursItem.id),
                               });
                             }
                           }}
                           className="w-4 h-4 text-emerald-600 border-slate-300 rounded focus:ring-emerald-500"
                         />
                         <span className="text-sm text-slate-700">
-                          {filiere.nom}
-                          {filiere.code && (
-                            <span className="text-xs text-slate-500 ml-2">
-                              ({filiere.code})
-                            </span>
-                          )}
+                          {parcoursItem.nom}
+                          <span className="text-xs text-slate-500 ml-2">
+                            ({parcoursItem.duree})
+                          </span>
                         </span>
                       </label>
                     ))}
                 </div>
-                {formData.filiereIds && formData.filiereIds.length > 0 && (
+                {formData.parcoursIds && formData.parcoursIds.length > 0 && (
                   <p className="text-xs text-slate-500 mt-2">
-                    {formData.filiereIds.length} filière{formData.filiereIds.length > 1 ? "s" : ""} sélectionnée{formData.filiereIds.length > 1 ? "s" : ""}
+                    {formData.parcoursIds.length} parcours sélectionné{formData.parcoursIds.length > 1 ? "s" : ""}
                   </p>
                 )}
               </div>
@@ -353,14 +349,14 @@ export default function DiplomeManager() {
                   <span className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-xs font-medium">
                     {diplome.niveau === NiveauEducation.SECONDAIRE ? "Secondaire" : "Université"}
                   </span>
-                  {diplome.filieres && diplome.filieres.length > 0 && (
+                  {diplome.parcours && diplome.parcours.length > 0 && (
                     <div className="flex gap-1 flex-wrap">
-                      {diplome.filieres.map((filiere) => (
+                      {diplome.parcours.map((parcoursItem) => (
                         <span
-                          key={filiere.id}
+                          key={parcoursItem.id}
                           className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs font-medium"
                         >
-                          {filiere.nom}
+                          {parcoursItem.nom}
                         </span>
                       ))}
                     </div>
