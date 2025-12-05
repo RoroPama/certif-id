@@ -396,6 +396,19 @@ export interface EtablissementEntity {
       updatedAt: Date | string;
     };
   }[];
+  parcours?: {
+    id: string;
+    etablissementId: string;
+    parcoursId: string;
+    createdAt: Date | string;
+    parcours: {
+      id: string;
+      nom: string;
+      duree: string;
+      createdAt: Date | string;
+      updatedAt: Date | string;
+    };
+  }[];
 }
 
 // DTOs pour les établissements
@@ -417,6 +430,7 @@ export interface UpdateEtablissementDto {
   telephone?: string;
   email?: string;
   documentTypeNames?: string[];
+  parcoursNames?: string[];
 }
 
 // Export d'une instance singleton
