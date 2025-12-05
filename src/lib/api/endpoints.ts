@@ -42,6 +42,15 @@ export const API_ENDPOINTS = {
     GET: "/etablissement/profile",
     UPDATE: "/etablissement/profile",
     GET_STATS: "/etablissement/profile/stats",
+    GET_PARCOURS: "/etablissement/profile/parcours",
+    GET_PARCOURS_BY_DOCUMENT_TYPE: (documentTypeId: string) =>
+      `/etablissement/profile/document-types/${documentTypeId}/parcours`,
+  },
+  // Dashboard (Tableau de bord établissement)
+  DASHBOARD: {
+    OVERVIEW: "/etablissement/dashboard/overview",
+    STATS: "/etablissement/dashboard/stats",
+    REPORTS: "/etablissement/dashboard/reports",
   },
   // Ministère - Demandes
   MINISTERE: {

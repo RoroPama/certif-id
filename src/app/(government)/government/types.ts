@@ -98,5 +98,9 @@ export interface UniversityFormData {
   address?: string;
   description?: string;
   filieres?: Filiere[];
+  documentTypeParcours?: {
+    [documentTypeId: string]: string[]; // parcoursIds
+  };
+  documentTypeNames?: string[]; // Noms des diplômes (pour compatibilité backend)
 }
 
