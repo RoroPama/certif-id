@@ -18,11 +18,48 @@ export function useConfig() {
         setIsLoading(true);
         setError(null);
         
-        // Récupérer la configuration académique depuis le backend
-        const config = await configService.getAcademicConfig();
+        // Récupérer les parcours et les types de documents depuis le backend
+        const [parcours, documentTypes] = await Promise.all([
+          configService.getAllParcours(),
+          configService.getAllDocumentTypes(),
+        ]);
         
-        setFilieres(config.filieres);
-        setFoundationYear(config.foundationYear);
+        // Transformer les parcours en filières avec leurs diplômes associés
+        const filieresData: Filiere[] = parcours.map((p) => {
+          // Trouver les diplômes associés à ce parcours
+          const diplomas = documentTypes
+            .filter((dt) => dt.parcours?.some((parc) => parc.id === p.id))
+            .map((dt) => ({
+              id: dt.id,
+              name: dt.nom,
+            }));
+          
+          return {
+            id: p.id,
+            name: p.nom,
+            diplomas,
+          };
+        });
+        
+        // Ajouter les diplômes sans parcours dans une catégorie "Autres"
+        const diplomesSansParcours = documentTypes.filter(
+          (dt) => !dt.parcours || dt.parcours.length === 0
+        );
+        
+        if (diplomesSansParcours.length > 0) {
+          filieresData.push({
+            id: "autres",
+            name: "Autres diplômes",
+            diplomas: diplomesSansParcours.map((dt) => ({
+              id: dt.id,
+              name: dt.nom,
+            })),
+          });
+        }
+        
+        setFilieres(filieresData);
+        // Année de fondation par défaut (peut être ajustée si nécessaire)
+        setFoundationYear(new Date().getFullYear() - 10);
       } catch (err) {
         console.error("Erreur lors de la récupération de la configuration:", err);
         setError(

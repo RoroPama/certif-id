@@ -263,9 +263,9 @@ export default function DiplomeManager() {
                         />
                         <span className="text-sm text-slate-700">
                           {parcoursItem.nom}
-                          <span className="text-xs text-slate-500 ml-2">
+                            <span className="text-xs text-slate-500 ml-2">
                             ({parcoursItem.duree})
-                          </span>
+                            </span>
                         </span>
                       </label>
                     ))}

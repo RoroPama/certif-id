@@ -45,8 +45,11 @@ export default function CreateUniversityModal({
   const [availableDiplomes, setAvailableDiplomes] = useState<
     DocumentTypeEntity[]
   >([]);
-  const [selectedParcoursId, setSelectedParcoursId] = useState<string>("");
-  const [selectedDiplomeIds, setSelectedDiplomeIds] = useState<string[]>([]);
+  const [selectedDiplomeId, setSelectedDiplomeId] = useState<string>("");
+  const [selectedParcoursIds, setSelectedParcoursIds] = useState<string[]>([]);
+  const [diplomeParcoursMap, setDiplomeParcoursMap] = useState<{
+    [diplomeId: string]: string[]; // parcoursIds pour ce diplôme
+  }>({});
   const [isLoadingData, setIsLoadingData] = useState(true);
   const { government } = MESSAGES;
   const createMsg = government.pages.universities.create;
@@ -74,45 +77,32 @@ export default function CreateUniversityModal({
     loadData();
   }, []);
 
-  const handleAddParcoursAndDiplomes = () => {
-    if (selectedParcoursId && selectedDiplomeIds.length > 0) {
-      const parcours = availableParcours.find((p) => p.id === selectedParcoursId);
-      if (parcours) {
-        const selectedDiplomes = availableDiplomes.filter((d) =>
-          selectedDiplomeIds.includes(d.id)
-        );
-        const parcoursData: Filiere = {
-          id: parcours.id,
-          name: parcours.nom,
-          diplomas: selectedDiplomes.map((d) => d.nom),
-        };
-        setFormData((prev) => ({
-          ...prev,
-          filieres: [...(prev.filieres || []), parcoursData],
-        }));
-        setSelectedParcoursId("");
-        setSelectedDiplomeIds([]);
-      }
+  const handleAddDiplomeAndParcours = () => {
+    if (selectedDiplomeId && selectedParcoursIds.length > 0) {
+      setDiplomeParcoursMap((prev) => ({
+        ...prev,
+        [selectedDiplomeId]: selectedParcoursIds,
+      }));
+      setSelectedDiplomeId("");
+      setSelectedParcoursIds([]);
     }
   };
 
-  const handleRemoveParcours = (id: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      filieres: prev.filieres?.filter((f) => f.id !== id) || [],
-    }));
+  const handleRemoveDiplome = (diplomeId: string) => {
+    setDiplomeParcoursMap((prev) => {
+      const newMap = { ...prev };
+      delete newMap[diplomeId];
+      return newMap;
+    });
   };
 
-  const handleDiplomeToggle = (diplomeId: string) => {
-    setSelectedDiplomeIds((prev) =>
-      prev.includes(diplomeId)
-        ? prev.filter((id) => id !== diplomeId)
-        : [...prev, diplomeId]
+  const handleParcoursToggle = (parcoursId: string) => {
+    setSelectedParcoursIds((prev) =>
+      prev.includes(parcoursId)
+        ? prev.filter((id) => id !== parcoursId)
+        : [...prev, parcoursId]
     );
   };
-
-  // Tous les diplômes sont disponibles (les parcours ne filtrent pas les diplômes)
-  const availableDiplomesForParcours = availableDiplomes;
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -126,7 +116,26 @@ export default function CreateUniversityModal({
     try {
       setIsSubmitting(true);
       setSubmitError(null);
-      await onSubmit(formData);
+      
+      // Transformer diplomeParcoursMap en documentTypeParcours
+      const documentTypeParcours: { [documentTypeId: string]: string[] } = {};
+      Object.entries(diplomeParcoursMap).forEach(([diplomeId, parcoursIds]) => {
+        documentTypeParcours[diplomeId] = parcoursIds;
+      });
+      
+      // Extraire les noms des diplômes pour documentTypeNames
+      const documentTypeNames = Object.keys(diplomeParcoursMap).map((id) => {
+        return availableDiplomes.find((d) => d.id === id)?.nom || '';
+      }).filter(Boolean);
+      
+      // Créer les données à soumettre avec documentTypeParcours et documentTypeNames
+      const submitData: UniversityFormData = {
+        ...formData,
+        documentTypeParcours,
+        documentTypeNames, // Noms des diplômes pour le backend
+      };
+      
+      await onSubmit(submitData);
     } catch (err) {
       setSubmitError(
         err instanceof Error ? err.message : "Erreur lors de la création"
@@ -319,119 +328,121 @@ export default function CreateUniversityModal({
                   <div className="bg-slate-50 rounded-lg p-4 space-y-4">
                     <div>
                       <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">
-                        Sélectionner un parcours
+                        1. Sélectionner un diplôme
                       </label>
                       <select
                         className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 outline-none bg-white"
-                        value={selectedParcoursId}
+                        value={selectedDiplomeId}
                         onChange={(e) => {
-                          setSelectedParcoursId(e.target.value);
-                          setSelectedDiplomeIds([]);
+                          setSelectedDiplomeId(e.target.value);
+                          setSelectedParcoursIds([]);
                         }}
                       >
-                        <option value="">Sélectionner un parcours</option>
-                        {availableParcours.map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {p.nom} ({p.duree})
+                        <option value="">Sélectionner un diplôme</option>
+                        {availableDiplomes.map((d) => (
+                          <option key={d.id} value={d.id}>
+                            {d.nom}
                           </option>
                         ))}
                       </select>
                     </div>
 
-                    {selectedParcoursId && (
+                    {selectedDiplomeId && (
                       <div>
                         <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">
-                          Sélectionner les diplômes autorisés
+                          2. Sélectionner les parcours pour ce diplôme
                         </label>
                         <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-lg bg-white p-2 space-y-2">
-                          {availableDiplomesForParcours.length === 0 ? (
+                          {availableParcours.length === 0 ? (
                             <p className="text-xs text-slate-400 text-center py-2">
-                              Aucun diplôme disponible
+                              Aucun parcours disponible
                             </p>
                           ) : (
-                            availableDiplomesForParcours.map((diplome) => (
+                            availableParcours.map((parcours) => (
                               <label
-                                key={diplome.id}
+                                key={parcours.id}
                                 className="flex items-center gap-2 p-2 hover:bg-slate-50 rounded cursor-pointer"
                               >
                                 <input
                                   type="checkbox"
-                                  checked={selectedDiplomeIds.includes(
-                                    diplome.id
+                                  checked={selectedParcoursIds.includes(
+                                    parcours.id
                                   )}
                                   onChange={() =>
-                                    handleDiplomeToggle(diplome.id)
+                                    handleParcoursToggle(parcours.id)
                                   }
                                   className="w-4 h-4 text-emerald-600 border-slate-300 rounded focus:ring-emerald-500"
                                 />
                                 <span className="text-sm text-slate-700">
-                                  {diplome.nom}
-                                  {diplome.description && (
-                                    <span className="text-xs text-slate-500 ml-2">
-                                      - {diplome.description}
-                                    </span>
-                                  )}
+                                  {parcours.nom}
+                                  <span className="text-xs text-slate-500 ml-2">
+                                    ({parcours.duree})
+                                  </span>
                                 </span>
                               </label>
                             ))
                           )}
                         </div>
-                        {selectedDiplomeIds.length > 0 && (
+                        {selectedParcoursIds.length > 0 && (
                           <p className="text-xs text-slate-500 mt-2">
-                            {selectedDiplomeIds.length} diplôme
-                            {selectedDiplomeIds.length > 1 ? "s" : ""}{" "}
-                            sélectionné
-                            {selectedDiplomeIds.length > 1 ? "s" : ""}
+                            {selectedParcoursIds.length} parcours sélectionné
+                            {selectedParcoursIds.length > 1 ? "s" : ""}
                           </p>
                         )}
                       </div>
                     )}
 
                     <button
-                      onClick={handleAddParcoursAndDiplomes}
+                      onClick={handleAddDiplomeAndParcours}
                       disabled={
-                        !selectedParcoursId || selectedDiplomeIds.length === 0
+                        !selectedDiplomeId || selectedParcoursIds.length === 0
                       }
                       className="w-full py-2.5 border-2 border-dashed border-emerald-300 text-emerald-700 rounded-lg hover:bg-emerald-50 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Plus className="w-4 h-4 inline mr-2" />
-                      Ajouter le parcours et ses diplômes
+                      Ajouter le diplôme et ses parcours
                     </button>
                   </div>
                 )}
 
-                {/* Liste des filières ajoutées */}
-                {formData.filieres && formData.filieres.length > 0 && (
+                {/* Liste des diplômes avec leurs parcours */}
+                {Object.keys(diplomeParcoursMap).length > 0 && (
                   <div className="space-y-2">
                     <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                      {createMsg.configuredFilieres}
+                      Diplômes et parcours configurés
                     </p>
-                    {formData.filieres.map((filiere) => (
-                      <div
-                        key={filiere.id}
-                        className="bg-white border border-slate-200 rounded-lg p-3 flex justify-between items-start"
-                      >
-                        <div>
-                          <p className="font-bold text-slate-900 text-sm">
-                            {filiere.name}
-                          </p>
-                          <p className="text-xs text-slate-500 mt-1">
-                            {filiere.diplomas.join(", ")}
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => handleRemoveParcours(filiere.id)}
-                          className="p-1 text-slate-400 hover:text-rose-600 transition-colors"
+                    {Object.entries(diplomeParcoursMap).map(([diplomeId, parcoursIds]) => {
+                      const diplome = availableDiplomes.find((d) => d.id === diplomeId);
+                      const parcours = parcoursIds
+                        .map((id) => availableParcours.find((p) => p.id === id))
+                        .filter(Boolean) as ParcoursEntity[];
+                      return (
+                        <div
+                          key={diplomeId}
+                          className="bg-white border border-slate-200 rounded-lg p-3 flex justify-between items-start"
                         >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))}
+                          <div className="flex-1">
+                            <p className="font-bold text-slate-900 text-sm">
+                              {diplome?.nom}
+                            </p>
+                            <p className="text-xs text-slate-500 mt-1">
+                              Parcours: {parcours.map((p) => p.nom).join(", ") || "Aucun"}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => handleRemoveDiplome(diplomeId)}
+                            className="p-1 text-slate-400 hover:text-rose-600 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
-                {(!formData.filieres || formData.filieres.length === 0) && (
+                {Object.keys(diplomeParcoursMap).length === 0 && (
                   <p className="text-sm text-slate-400 text-center py-4">
-                    {createMsg.noFilieres}
+                    Aucun diplôme configuré. Ajoutez un diplôme et ses parcours ci-dessus.
                   </p>
                 )}
               </div>

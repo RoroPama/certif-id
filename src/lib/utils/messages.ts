@@ -187,7 +187,7 @@ export const MESSAGES = {
         formTitle: "Saisie des informations",
         fields: {
           academicYear: "Année Académique",
-          filiere: "Filière",
+          parcours: "Parcours",
           diplomaTitle: "Intitulé du Diplôme",
           recipientIdentity: "Identité du Récipiendaire",
           lastName: "Nom",
@@ -198,6 +198,9 @@ export const MESSAGES = {
         placeholders: {
           select: "Sélectionner...",
           selectDiploma: "Sélectionner un diplôme...",
+          selectParcours: "Sélectionner un parcours...",
+          parcoursNotApplicable: "Non applicable pour ce diplôme",
+          selectDiplomaFirst: "Sélectionnez d'abord un diplôme",
           lastName: "EX: MABIALA",
           firstName: "Ex: Jean",
         },

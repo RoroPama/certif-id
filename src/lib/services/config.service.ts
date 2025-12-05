@@ -79,7 +79,7 @@ export class ConfigService {
           headers: cookieHeader ? { cookie: cookieHeader } : undefined,
         }
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("[ConfigService] Erreur getAllParcours:", error);
       throw error;
     }
@@ -155,7 +155,7 @@ export class ConfigService {
           headers: cookieHeader ? { cookie: cookieHeader } : undefined,
         }
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("[ConfigService] Erreur getAllDocumentTypes:", error);
       throw error;
     }
@@ -200,7 +200,7 @@ export class ConfigService {
     data: UpdateDocumentTypeDto,
     cookieHeader?: string
   ): Promise<DocumentTypeEntity> {
-    return apiClient.put<DocumentTypeEntity>(
+    return apiClient.patch<DocumentTypeEntity>(
       API_ENDPOINTS.MINISTERE.DOCUMENT_TYPES.UPDATE(id),
       data,
       {

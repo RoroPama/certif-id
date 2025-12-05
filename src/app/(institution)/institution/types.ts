@@ -6,6 +6,16 @@ export type DiplomaTitel = { id: string; name: string };
 
 export type Filiere = { id: string; name: string; diplomas: DiplomaTitel[] };
 
+// Type pour les parcours (remplace Filiere dans new-request)
+export type Parcours = { id: string; name: string; diplomas: DiplomaTitel[] };
+
+// Type pour les diplômes avec leurs parcours associés
+export type DiplomeWithParcours = {
+  id: string;
+  name: string;
+  parcours: { id: string; name: string; duree: string }[];
+};
+
 export type AcademicYear = { id: string; label: string; isCurrent: boolean };
 
 export type StudentDraft = {
@@ -14,7 +24,7 @@ export type StudentDraft = {
   lastName: string;
   sex: "M" | "F";
   yearId: string;
-  filiereId: string;
+  parcoursId?: string; // Optionnel - certains diplômes n'ont pas de parcours (ex: BEPC)
   diplomaId: string;
   diplomaName: string;
   mention: string;

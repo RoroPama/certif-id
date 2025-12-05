@@ -56,9 +56,15 @@ export default function UniversityDetailPageClient({
   const [selectedDocumentTypes, setSelectedDocumentTypes] = useState<string[]>(
     []
   );
-  const [selectedParcours, setSelectedParcours] = useState<string[]>([]);
+  const [documentTypeParcours, setDocumentTypeParcours] = useState<{
+    [documentTypeId: string]: string[];
+  }>({});
   const [showAddDocument, setShowAddDocument] = useState(false);
   const [showAddParcours, setShowAddParcours] = useState(false);
+  const [currentDiplomeForParcours, setCurrentDiplomeForParcours] = useState<
+    string | null
+  >(null);
+  const [diplomeFilter, setDiplomeFilter] = useState<string>("all");
 
   // Récupérer le cookie pour l'authentification
   const getCookieHeader = () => {
@@ -107,11 +113,31 @@ export default function UniversityDetailPageClient({
         ) || [];
       setSelectedDocumentTypes(docTypeNames);
 
-      // Initialiser les parcours sélectionnés (si disponibles dans la réponse)
-      // Note: Le backend retourne les parcours dans etablissement.parcours
-      const etablissementParcours = etablissementData.parcours || [];
-      const parcoursNames = etablissementParcours.map((p) => p.parcours.nom);
-      setSelectedParcours(parcoursNames);
+      // Initialiser les associations diplôme-parcours depuis les données du backend
+      const initialDocumentTypeParcours: {
+        [documentTypeId: string]: string[];
+      } = {};
+
+      // Grouper les parcours par documentTypeId depuis documentTypeParcours
+      const relations =
+        etablissementData.documentTypeParcours ||
+        etablissementData.etablissementDocumentTypeParcours;
+      if (relations) {
+        relations.forEach((relation) => {
+          const docTypeId = relation.documentType.id;
+          const parcoursId = relation.parcours.id;
+
+          if (!initialDocumentTypeParcours[docTypeId]) {
+            initialDocumentTypeParcours[docTypeId] = [];
+          }
+
+          if (!initialDocumentTypeParcours[docTypeId].includes(parcoursId)) {
+            initialDocumentTypeParcours[docTypeId].push(parcoursId);
+          }
+        });
+      }
+
+      setDocumentTypeParcours(initialDocumentTypeParcours);
     } catch (err: any) {
       console.error("Erreur lors du chargement:", err);
       setError(err.message || "Erreur lors du chargement des données");
@@ -131,7 +157,7 @@ export default function UniversityDetailPageClient({
       const updateData: UpdateEtablissementDto = {
         ...editedData,
         documentTypeNames: selectedDocumentTypes,
-        parcoursNames: selectedParcours,
+        documentTypeParcours: documentTypeParcours,
       };
 
       const updated = await governmentService.updateEtablissement(
@@ -141,6 +167,32 @@ export default function UniversityDetailPageClient({
       );
 
       setEtablissement(updated);
+
+      // Mettre à jour documentTypeParcours immédiatement depuis la réponse
+      const updatedRelations =
+        updated.documentTypeParcours ||
+        updated.etablissementDocumentTypeParcours;
+      if (updatedRelations) {
+        const updatedDocumentTypeParcours: {
+          [documentTypeId: string]: string[];
+        } = {};
+
+        updatedRelations.forEach((relation) => {
+          const docTypeId = relation.documentType.id;
+          const parcoursId = relation.parcours.id;
+
+          if (!updatedDocumentTypeParcours[docTypeId]) {
+            updatedDocumentTypeParcours[docTypeId] = [];
+          }
+
+          if (!updatedDocumentTypeParcours[docTypeId].includes(parcoursId)) {
+            updatedDocumentTypeParcours[docTypeId].push(parcoursId);
+          }
+        });
+
+        setDocumentTypeParcours(updatedDocumentTypeParcours);
+      }
+
       setSuccess("Établissement mis à jour avec succès !");
 
       // Recharger les données pour avoir les dernières informations
@@ -158,27 +210,63 @@ export default function UniversityDetailPageClient({
   const handleAddDocumentType = (docTypeName: string) => {
     if (!selectedDocumentTypes.includes(docTypeName)) {
       setSelectedDocumentTypes([...selectedDocumentTypes, docTypeName]);
+      // Initialiser documentTypeParcours pour ce nouveau diplôme
+      const docType = allDocumentTypes.find((dt) => dt.nom === docTypeName);
+      if (docType) {
+        setDocumentTypeParcours((prev) => ({
+          ...prev,
+          [docType.id]: [],
+        }));
+      }
     }
     setShowAddDocument(false);
   };
 
   const handleRemoveDocumentType = (docTypeName: string) => {
+    const docType = allDocumentTypes.find((dt) => dt.nom === docTypeName);
     setSelectedDocumentTypes(
       selectedDocumentTypes.filter((name) => name !== docTypeName)
     );
+    // Retirer aussi les associations parcours pour ce diplôme
+    if (docType) {
+      setDocumentTypeParcours((prev) => {
+        const newMap = { ...prev };
+        delete newMap[docType.id];
+        return newMap;
+      });
+    }
   };
 
-  const handleAddParcours = (parcoursName: string) => {
-    if (!selectedParcours.includes(parcoursName)) {
-      setSelectedParcours([...selectedParcours, parcoursName]);
+  const handleAddParcoursToDiplome = (docTypeId: string) => {
+    setCurrentDiplomeForParcours(docTypeId);
+    setShowAddParcours(true);
+  };
+
+  const handleRemoveParcoursFromDiplome = (
+    docTypeId: string,
+    parcoursId: string
+  ) => {
+    setDocumentTypeParcours((prev) => ({
+      ...prev,
+      [docTypeId]: prev[docTypeId]?.filter((id) => id !== parcoursId) || [],
+    }));
+  };
+
+  const handleAddParcours = (parcoursId: string) => {
+    if (currentDiplomeForParcours && parcoursId) {
+      setDocumentTypeParcours((prev) => {
+        const currentParcours = prev[currentDiplomeForParcours] || [];
+        if (!currentParcours.includes(parcoursId)) {
+          return {
+            ...prev,
+            [currentDiplomeForParcours]: [...currentParcours, parcoursId],
+          };
+        }
+        return prev;
+      });
+      setCurrentDiplomeForParcours(null);
     }
     setShowAddParcours(false);
-  };
-
-  const handleRemoveParcours = (parcoursName: string) => {
-    setSelectedParcours(
-      selectedParcours.filter((name) => name !== parcoursName)
-    );
   };
 
   if (loading) {
@@ -216,8 +304,12 @@ export default function UniversityDetailPageClient({
   const availableDocumentTypes = allDocumentTypes.filter(
     (dt) => !selectedDocumentTypes.includes(dt.nom)
   );
+  // Pour les parcours disponibles, on vérifie ceux qui ne sont pas déjà associés à tous les diplômes
+  const allSelectedParcoursIds = new Set(
+    Object.values(documentTypeParcours).flat()
+  );
   const availableParcours = allParcours.filter(
-    (p) => !selectedParcours.includes(p.nom)
+    (p) => !allSelectedParcoursIds.has(p.id)
   );
 
   return (
@@ -391,22 +483,43 @@ export default function UniversityDetailPageClient({
           </div>
         </div>
 
-        {/* Types de documents autorisés */}
+        {/* Diplômes et Parcours groupés */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
           <div className="flex justify-between items-center mb-6">
             <div className="flex items-center gap-2">
               <FileText className="w-5 h-5 text-emerald-600" />
               <h3 className="font-serif font-bold text-lg text-slate-900">
-                Types de documents autorisés
+                Diplômes et Parcours
               </h3>
             </div>
-            <button
-              onClick={() => setShowAddDocument(!showAddDocument)}
-              className="px-3 py-1.5 text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors text-sm font-medium flex items-center gap-1"
-            >
-              <Plus className="w-4 h-4" />
-              Ajouter
-            </button>
+            <div className="flex items-center gap-3">
+              {selectedDocumentTypes.length > 0 && (
+                <select
+                  value={diplomeFilter}
+                  onChange={(e) => setDiplomeFilter(e.target.value)}
+                  className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 outline-none bg-white"
+                >
+                  <option value="all">Tous les diplômes</option>
+                  {selectedDocumentTypes.map((docTypeName) => {
+                    const docType = allDocumentTypes.find(
+                      (dt) => dt.nom === docTypeName
+                    );
+                    return docType ? (
+                      <option key={docType.id} value={docType.id}>
+                        {docTypeName}
+                      </option>
+                    ) : null;
+                  })}
+                </select>
+              )}
+              <button
+                onClick={() => setShowAddDocument(!showAddDocument)}
+                className="px-3 py-1.5 text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors text-sm font-medium flex items-center gap-1"
+              >
+                <Plus className="w-4 h-4" />
+                Ajouter un diplôme
+              </button>
+            </div>
           </div>
 
           {/* Liste déroulante pour ajouter un type de document */}
@@ -414,7 +527,7 @@ export default function UniversityDetailPageClient({
             <div className="bg-slate-50 rounded-lg p-4 mb-4 space-y-3 animate-in slide-in-from-top-2 duration-200">
               <div className="flex justify-between items-center">
                 <p className="text-sm font-bold text-slate-700">
-                  Sélectionner un type de document
+                  Sélectionner un diplôme
                 </p>
                 <button
                   onClick={() => setShowAddDocument(false)}
@@ -432,7 +545,7 @@ export default function UniversityDetailPageClient({
                 }}
                 value=""
               >
-                <option value="">Sélectionner un type de document</option>
+                <option value="">Sélectionner un diplôme</option>
                 {availableDocumentTypes.map((dt) => (
                   <option key={dt.id} value={dt.nom}>
                     {dt.nom}
@@ -442,69 +555,18 @@ export default function UniversityDetailPageClient({
             </div>
           )}
 
-          {/* Liste des types de documents sélectionnés */}
-          <div className="space-y-3">
-            {selectedDocumentTypes.length > 0 ? (
-              selectedDocumentTypes.map((docTypeName) => {
-                const docType = allDocumentTypes.find(
-                  (dt) => dt.nom === docTypeName
-                );
-                return (
-                  <div
-                    key={docTypeName}
-                    className="border border-slate-200 rounded-lg p-4 hover:border-emerald-200 transition-colors group"
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-bold text-slate-900">
-                          {docTypeName}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => handleRemoveDocumentType(docTypeName)}
-                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors opacity-0 group-hover:opacity-100"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })
-            ) : (
-              <p className="text-sm text-slate-400 text-center py-8">
-                Aucun type de document autorisé
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Parcours associés */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-          <div className="flex justify-between items-center mb-6">
-            <div className="flex items-center gap-2">
-              <GraduationCap className="w-5 h-5 text-emerald-600" />
-              <h3 className="font-serif font-bold text-lg text-slate-900">
-                Parcours d'études
-              </h3>
-            </div>
-            <button
-              onClick={() => setShowAddParcours(!showAddParcours)}
-              className="px-3 py-1.5 text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors text-sm font-medium flex items-center gap-1"
-            >
-              <Plus className="w-4 h-4" />
-              Ajouter
-            </button>
-          </div>
-
-          {/* Liste déroulante pour ajouter un parcours */}
-          {showAddParcours && (
+          {/* Liste déroulante pour ajouter un parcours à un diplôme */}
+          {showAddParcours && currentDiplomeForParcours && (
             <div className="bg-slate-50 rounded-lg p-4 mb-4 space-y-3 animate-in slide-in-from-top-2 duration-200">
               <div className="flex justify-between items-center">
                 <p className="text-sm font-bold text-slate-700">
                   Sélectionner un parcours
                 </p>
                 <button
-                  onClick={() => setShowAddParcours(false)}
+                  onClick={() => {
+                    setShowAddParcours(false);
+                    setCurrentDiplomeForParcours(null);
+                  }}
                   className="text-slate-400 hover:text-slate-600"
                 >
                   <X className="w-4 h-4" />
@@ -520,51 +582,125 @@ export default function UniversityDetailPageClient({
                 value=""
               >
                 <option value="">Sélectionner un parcours</option>
-                {availableParcours.map((p) => (
-                  <option key={p.id} value={p.nom}>
-                    {p.nom} - {p.duree}
-                  </option>
-                ))}
+                {allParcours
+                  .filter(
+                    (p) =>
+                      !documentTypeParcours[
+                        currentDiplomeForParcours
+                      ]?.includes(p.id)
+                  )
+                  .map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.nom} ({p.duree})
+                    </option>
+                  ))}
               </select>
             </div>
           )}
 
-          {/* Liste des parcours sélectionnés */}
-          <div className="space-y-3">
-            {selectedParcours.length > 0 ? (
-              selectedParcours.map((parcoursName) => {
-                const parcours = allParcours.find(
-                  (p) => p.nom === parcoursName
-                );
-                return (
-                  <div
-                    key={parcoursName}
-                    className="border border-slate-200 rounded-lg p-4 hover:border-emerald-200 transition-colors group"
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-bold text-slate-900">
-                          {parcoursName}
-                        </p>
-                        {parcours && (
-                          <p className="text-sm text-slate-500 mt-1">
-                            Durée: {parcours.duree}
+          {/* Liste des diplômes avec leurs parcours */}
+          <div className="space-y-4">
+            {selectedDocumentTypes.length > 0 ? (
+              selectedDocumentTypes
+                .map((docTypeName) => {
+                  const docType = allDocumentTypes.find(
+                    (dt) => dt.nom === docTypeName
+                  );
+                  return docType;
+                })
+                .filter((docType) => {
+                  // Filtrer selon diplomeFilter
+                  if (diplomeFilter === "all") return true;
+                  return docType?.id === diplomeFilter;
+                })
+                .map((docType) => {
+                  if (!docType) return null;
+
+                  const parcoursIds = documentTypeParcours[docType.id] || [];
+                  const parcoursList = parcoursIds
+                    .map((id) => allParcours.find((p) => p.id === id))
+                    .filter(Boolean) as ParcoursEntity[];
+
+                  return (
+                    <div
+                      key={docType.id}
+                      className="border border-slate-200 rounded-lg p-4 hover:border-emerald-200 transition-colors group"
+                    >
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-emerald-600" />
+                          <h4 className="font-bold text-slate-900">
+                            {docType.nom}
+                          </h4>
+                        </div>
+                        <button
+                          onClick={() => handleRemoveDocumentType(docType.nom)}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors opacity-0 group-hover:opacity-100"
+                          title="Supprimer le diplôme"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      <div className="ml-6 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                            Parcours associés
+                          </p>
+                          <button
+                            onClick={() =>
+                              handleAddParcoursToDiplome(docType.id)
+                            }
+                            className="text-xs text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 px-2 py-1 rounded transition-colors"
+                          >
+                            <Plus className="w-3 h-3 inline mr-1" />
+                            Ajouter
+                          </button>
+                        </div>
+
+                        {parcoursList.length > 0 ? (
+                          <div className="space-y-2">
+                            {parcoursList.map((parcours) => (
+                              <div
+                                key={parcours.id}
+                                className="flex items-center justify-between bg-slate-50 p-2 rounded border border-slate-100 group/parcours"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <GraduationCap className="w-3 h-3 text-blue-600" />
+                                  <span className="text-sm text-slate-700">
+                                    {parcours.nom}
+                                  </span>
+                                  <span className="text-xs text-slate-500">
+                                    ({parcours.duree})
+                                  </span>
+                                </div>
+                                <button
+                                  onClick={() =>
+                                    handleRemoveParcoursFromDiplome(
+                                      docType.id,
+                                      parcours.id
+                                    )
+                                  }
+                                  className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors opacity-0 group-hover/parcours:opacity-100"
+                                  title="Retirer ce parcours"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-slate-400 italic">
+                            Aucun parcours associé à ce diplôme
                           </p>
                         )}
                       </div>
-                      <button
-                        onClick={() => handleRemoveParcours(parcoursName)}
-                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors opacity-0 group-hover:opacity-100"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
                     </div>
-                  </div>
-                );
-              })
+                  );
+                })
             ) : (
               <p className="text-sm text-slate-400 text-center py-8">
-                Aucun parcours associé
+                Aucun diplôme configuré. Ajoutez un diplôme pour commencer.
               </p>
             )}
           </div>

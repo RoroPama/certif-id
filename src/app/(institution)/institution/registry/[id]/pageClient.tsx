@@ -26,6 +26,18 @@ export default function DiplomaDetailPageClient({
 
   return (
     <div className="flex flex-col h-[calc(100vh-200px)] animate-in zoom-in duration-300">
+      {/* Page Title and Breadcrumbs */}
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-blue-900 mb-2">
+          Détail du Diplôme
+        </h1>
+        <nav className="text-sm text-slate-600">
+          <span className="text-slate-500">Espace Université</span>
+          <span className="mx-2 text-slate-400">/</span>
+          <span className="text-slate-700 font-medium">Détail diplôme</span>
+        </nav>
+      </div>
+
       {/* Header Navigation */}
       <div className="flex items-center justify-between mb-6 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
         <div className="flex items-center gap-4">

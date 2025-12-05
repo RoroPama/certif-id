@@ -367,6 +367,22 @@ export interface DocumentSigneEntity {
 }
 
 // Type pour les établissements
+export interface EtablissementDocumentTypeParcoursRelation {
+  id: string;
+  etablissementId: string;
+  documentTypeId: string;
+  parcoursId: string;
+  documentType: {
+    id: string;
+    nom: string;
+  };
+  parcours: {
+    id: string;
+    nom: string;
+    duree: string;
+  };
+}
+
 export interface EtablissementEntity {
   id: string;
   nom: string;
@@ -409,6 +425,9 @@ export interface EtablissementEntity {
       updatedAt: Date | string;
     };
   }[];
+  documentTypeParcours?: EtablissementDocumentTypeParcoursRelation[];
+  // Alias pour compatibilité
+  etablissementDocumentTypeParcours?: EtablissementDocumentTypeParcoursRelation[];
 }
 
 // DTOs pour les établissements
@@ -420,6 +439,9 @@ export interface CreateEtablissementDto {
   telephone: string;
   email: string;
   documentTypeNames: string[];
+  documentTypeParcours?: {
+    [documentTypeId: string]: string[]; // Array de parcoursIds
+  };
 }
 
 export interface UpdateEtablissementDto {
@@ -430,7 +452,9 @@ export interface UpdateEtablissementDto {
   telephone?: string;
   email?: string;
   documentTypeNames?: string[];
-  parcoursNames?: string[];
+  documentTypeParcours?: {
+    [documentTypeId: string]: string[]; // Array de parcoursIds
+  };
 }
 
 // Export d'une instance singleton

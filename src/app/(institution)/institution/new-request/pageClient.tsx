@@ -7,15 +7,15 @@ import { useNewRequest } from "../hooks/useNewRequest";
 import PdfUploadField from "../components/PdfUploadField";
 import { INSTITUTION_ROUTES, ACADEMIC_MENTIONS } from "@/lib/utils/constants";
 import { MESSAGES } from "@/lib/utils/messages";
-import type { Filiere } from "../types";
+import type { DiplomeWithParcours } from "../types";
 
 interface NewRequestPageClientProps {
-  initialFilieres: Filiere[];
+  initialDiplomes: DiplomeWithParcours[];
   foundationYear: number;
 }
 
 export default function NewRequestPageClient({
-  initialFilieres,
+  initialDiplomes,
   foundationYear,
 }: NewRequestPageClientProps) {
   const router = useRouter();
@@ -31,13 +31,20 @@ export default function NewRequestPageClient({
     handleRemoveDraft,
     handleSubmit,
   } = useNewRequest({
-    filieres: initialFilieres,
+    diplomes: initialDiplomes,
     foundationYear,
     onSubmitSuccess: () => {
       // Rediriger vers la page des demandes après soumission
       router.push(INSTITUTION_ROUTES.REQUESTS);
     },
   });
+
+  // Trouver le diplôme sélectionné pour obtenir ses parcours
+  const selectedDiplome = initialDiplomes.find(
+    (d) => d.id === currentEntry.diplomaId
+  );
+  const availableParcours = selectedDiplome?.parcours || [];
+  const hasParcours = availableParcours.length > 0;
 
   const { newRequest } = MESSAGES.institution.pages;
 
@@ -76,24 +83,27 @@ export default function NewRequestPageClient({
             </div>
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">
-                {newRequest.fields.filiere}
+                {newRequest.fields.diplomaTitle}
               </label>
               <select
                 className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-slate-800 font-medium outline-none"
-                value={currentEntry.filiereId || ""}
+                value={currentEntry.diplomaId || ""}
                 onChange={(e) => {
+                  const selectedDiplome = initialDiplomes.find(
+                    (d) => d.id === e.target.value
+                  );
                   setCurrentEntry({
                     ...currentEntry,
-                    filiereId: e.target.value,
-                    diplomaId: "",
-                    diplomaName: "",
+                    diplomaId: e.target.value,
+                    diplomaName: selectedDiplome ? selectedDiplome.name : "",
+                    parcoursId: "", // Réinitialiser le parcours quand on change de diplôme
                   });
                 }}
               >
-                <option value="">{newRequest.placeholders.select}</option>
-                {initialFilieres.map((f) => (
-                  <option key={f.id} value={f.id}>
-                    {f.name}
+                <option value="">{newRequest.placeholders.selectDiploma}</option>
+                {initialDiplomes.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.name}
                   </option>
                 ))}
               </select>
@@ -104,33 +114,40 @@ export default function NewRequestPageClient({
 
           <div className="space-y-2">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">
-              {newRequest.fields.diplomaTitle}
+              {newRequest.fields.parcours}
             </label>
             <select
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-slate-800 font-medium outline-none"
-              value={currentEntry.diplomaId || ""}
+              className={`w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-slate-800 font-medium outline-none ${
+                !hasParcours ? "opacity-50 cursor-not-allowed" : ""
+              }`}
+              value={currentEntry.parcoursId || ""}
               onChange={(e) => {
-                const selected = initialFilieres
-                  .find((f) => f.id === currentEntry.filiereId)
-                  ?.diplomas.find((d) => d.id === e.target.value);
                 setCurrentEntry({
                   ...currentEntry,
-                  diplomaId: e.target.value,
-                  diplomaName: selected ? selected.name : "",
+                  parcoursId: e.target.value,
                 });
               }}
-              disabled={!currentEntry.filiereId}
+              disabled={!currentEntry.diplomaId || !hasParcours}
             >
-              <option value="">{newRequest.placeholders.selectDiploma}</option>
-              {currentEntry.filiereId &&
-                initialFilieres
-                  .find((f) => f.id === currentEntry.filiereId)
-                  ?.diplomas.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.name}
-                    </option>
-                  ))}
+              <option value="">
+                {!currentEntry.diplomaId
+                  ? "Sélectionnez d'abord un diplôme"
+                  : !hasParcours
+                  ? "Non applicable pour ce diplôme"
+                  : newRequest.placeholders.select}
+              </option>
+              {hasParcours &&
+                availableParcours.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
             </select>
+            {!hasParcours && currentEntry.diplomaId && (
+              <p className="text-xs text-slate-400 mt-1">
+                Ce diplôme ne nécessite pas de parcours
+              </p>
+            )}
           </div>
 
           <div className="space-y-6">

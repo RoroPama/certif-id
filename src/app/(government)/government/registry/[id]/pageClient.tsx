@@ -11,19 +11,22 @@ import {
   Shield,
   CheckCircle2,
   XCircle,
-  FileText,
-  ExternalLink,
 } from "lucide-react";
 import { GOVERNMENT_ROUTES } from "@/lib/utils/constants";
 import { MESSAGES } from "@/lib/utils/messages";
+import PdfViewer from "@/components/ui/PdfViewer";
 import type { RegistryEntry } from "../../types";
 
 interface RegistryDetailPageClientProps {
   entry: RegistryEntry;
+  pdfSigneUrl: string;
+  pdfOriginalUrl?: string | null;
 }
 
 export default function RegistryDetailPageClient({
   entry,
+  pdfSigneUrl,
+  pdfOriginalUrl,
 }: RegistryDetailPageClientProps) {
   const { government } = MESSAGES;
   const detailMsg = government.pages.registry.detail;
@@ -81,7 +84,9 @@ export default function RegistryDetailPageClient({
                   <p className="text-xs text-slate-500">
                     {detailMsg.fields.fullName}
                   </p>
-                  <p className="font-bold text-slate-900">{entry.studentName}</p>
+                  <p className="font-bold text-slate-900">
+                    {entry.studentName}
+                  </p>
                 </div>
               </div>
             </div>
@@ -97,7 +102,9 @@ export default function RegistryDetailPageClient({
                   <p className="text-xs text-slate-500">
                     {detailMsg.fields.diplomaTitle}
                   </p>
-                  <p className="font-bold text-slate-900">{entry.diplomaTitle}</p>
+                  <p className="font-bold text-slate-900">
+                    {entry.diplomaTitle}
+                  </p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-500">
@@ -112,13 +119,17 @@ export default function RegistryDetailPageClient({
                     <p className="text-xs text-slate-500">
                       {detailMsg.fields.filiere}
                     </p>
-                    <p className="font-medium text-slate-700">{entry.filiere}</p>
+                    <p className="font-medium text-slate-700">
+                      {entry.filiere}
+                    </p>
                   </div>
                   <div>
                     <p className="text-xs text-slate-500">
                       {detailMsg.fields.promotion}
                     </p>
-                    <p className="font-medium text-slate-700">{entry.promotion}</p>
+                    <p className="font-medium text-slate-700">
+                      {entry.promotion}
+                    </p>
                   </div>
                 </div>
                 <div>
@@ -151,7 +162,9 @@ export default function RegistryDetailPageClient({
                   <p className="text-xs text-slate-500">
                     {detailMsg.fields.issueDate}
                   </p>
-                  <p className="font-medium text-slate-700">{entry.issueDate}</p>
+                  <p className="font-medium text-slate-700">
+                    {entry.issueDate}
+                  </p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-500">
@@ -176,54 +189,23 @@ export default function RegistryDetailPageClient({
 
         {/* Document Preview */}
         <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-          <div className="p-4 border-b border-slate-200 flex justify-between items-center">
-            <div>
-              <h4 className="font-bold text-slate-800">
-                {detailMsg.preview.title}
-              </h4>
-              <p className="text-xs text-slate-500">
-                {detailMsg.preview.description}
-              </p>
-            </div>
-            <button className="flex items-center gap-2 px-3 py-1.5 text-emerald-700 hover:bg-emerald-50 rounded-lg text-sm font-medium transition-colors">
-              <ExternalLink className="w-4 h-4" />
-              {detailMsg.preview.openPdf}
-            </button>
+          <div className="p-4 border-b border-slate-200">
+            <h4 className="font-bold text-slate-800">
+              {detailMsg.preview.title}
+            </h4>
+            <p className="text-xs text-slate-500">
+              {detailMsg.preview.description}
+            </p>
           </div>
-          <div className="flex-1 bg-slate-100 flex items-center justify-center p-8 min-h-[400px]">
-            <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-2xl aspect-[1/1.414] flex flex-col items-center justify-center text-center border border-slate-200">
-              {/* Simulated diploma preview */}
-              <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mb-6">
-                <FileText className="w-10 h-10 text-emerald-600" />
-              </div>
-              <p className="text-lg font-serif font-bold text-slate-800 mb-2">
-                RÉPUBLIQUE DU CONGO
-              </p>
-              <p className="text-sm text-slate-500 mb-6">
-                Ministère de l&apos;Enseignement Supérieur
-              </p>
-              <div className="border-t border-b border-slate-200 py-4 px-8 mb-6">
-                <p className="text-2xl font-serif font-bold text-emerald-800">
-                  {entry.diplomaTitle}
-                </p>
-              </div>
-              <p className="text-slate-600 mb-2">Décerné à</p>
-              <p className="text-xl font-bold text-slate-900 mb-4">
-                {entry.studentName}
-              </p>
-              <p className="text-sm text-slate-500">
-                Mention: <span className="font-bold">{entry.mention}</span> •
-                Promotion: <span className="font-bold">{entry.promotion}</span>
-              </p>
-              <div className="mt-8 pt-4 border-t border-slate-100 w-full">
-                <p className="text-xs text-slate-400">
-                  N° {entry.serialNumber} • Émis le {entry.issueDate}
-                </p>
-                <p className="text-xs text-emerald-600 font-bold mt-1">
-                  ✓ Document authentifié par CERTIF-GOUV
-                </p>
-              </div>
-            </div>
+          <div className="flex-1 min-h-0">
+            <PdfViewer
+              signedPdfUrl={pdfSigneUrl}
+              originalPdfUrl={pdfOriginalUrl || undefined}
+              fileName={`${entry.studentName}_${entry.diplomaTitle}.pdf`}
+              emptyStateMessage="Document non disponible"
+              emptyStateDescription="Le document PDF n'est pas disponible pour le moment."
+              className="h-full"
+            />
           </div>
         </div>
       </div>
