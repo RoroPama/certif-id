@@ -72,13 +72,13 @@ export const API_ENDPOINTS = {
       CREATE: "/ministere/etablissements",
       UPDATE: (id: string) => `/ministere/etablissements/${id}`,
     },
-    // Ministère - Filières
-    FILIERES: {
-      GET_ALL: "/ministere/filieres",
-      GET_BY_ID: (id: string) => `/ministere/filieres/${id}`,
-      CREATE: "/ministere/filieres",
-      UPDATE: (id: string) => `/ministere/filieres/${id}`,
-      DELETE: (id: string) => `/ministere/filieres/${id}`,
+    // Ministère - Parcours
+    PARCOURS: {
+      GET_ALL: "/ministere/parcours",
+      GET_BY_ID: (id: string) => `/ministere/parcours/${id}`,
+      CREATE: "/ministere/parcours",
+      UPDATE: (id: string) => `/ministere/parcours/${id}`,
+      DELETE: (id: string) => `/ministere/parcours/${id}`,
     },
     // Ministère - Types de documents (Diplômes)
     DOCUMENT_TYPES: {

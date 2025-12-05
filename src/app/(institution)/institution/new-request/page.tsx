@@ -33,9 +33,9 @@ export default async function NewRequestPage() {
     // Récupérer les types de documents autorisés pour cet établissement
     documentTypes = await documentsService.getAuthorizedTypes(cookieHeader);
 
-    // Récupérer toutes les filières et diplômes configurés dans la plateforme
-    const [allFilieres, allDiplomes] = await Promise.all([
-      configService.getAllFilieres(cookieHeader),
+    // Récupérer tous les parcours et diplômes configurés dans la plateforme
+    const [allParcours, allDiplomes] = await Promise.all([
+      configService.getAllParcours(cookieHeader),
       configService.getAllDocumentTypes(cookieHeader),
     ]);
 
@@ -45,42 +45,44 @@ export default async function NewRequestPage() {
       authorizedDiplomeIds.has(d.id)
     );
 
-    // Grouper les diplômes autorisés par filière
+    // Grouper les diplômes autorisés par parcours
     if (authorizedDiplomes.length > 0) {
-      // Créer un map des diplômes par filière
-      const diplomesByFiliere = new Map<string, typeof authorizedDiplomes>();
+      // Créer un map des diplômes par parcours
+      const diplomesByParcours = new Map<string, typeof authorizedDiplomes>();
 
-      // Ajouter les diplômes avec filière
+      // Ajouter les diplômes avec parcours
       authorizedDiplomes.forEach((diplome) => {
-        if (diplome.filiereId) {
-          if (!diplomesByFiliere.has(diplome.filiereId)) {
-            diplomesByFiliere.set(diplome.filiereId, []);
-          }
-          diplomesByFiliere.get(diplome.filiereId)!.push(diplome);
+        if (diplome.parcours && diplome.parcours.length > 0) {
+          diplome.parcours.forEach((parcoursItem) => {
+            if (!diplomesByParcours.has(parcoursItem.id)) {
+              diplomesByParcours.set(parcoursItem.id, []);
+            }
+            diplomesByParcours.get(parcoursItem.id)!.push(diplome);
+          });
         }
       });
 
-      // Créer les filières avec leurs diplômes
-      filieres = allFilieres
-        .filter((f) => f.actif && diplomesByFiliere.has(f.id))
-        .map((f) => ({
-          id: f.id,
-          name: f.nom,
-          diplomas: diplomesByFiliere.get(f.id)!.map((d) => ({
+      // Créer les parcours avec leurs diplômes
+      filieres = allParcours
+        .filter((p) => diplomesByParcours.has(p.id))
+        .map((p) => ({
+          id: p.id,
+          name: p.nom,
+          diplomas: diplomesByParcours.get(p.id)!.map((d) => ({
             id: d.id,
             name: d.nom,
           })),
         }));
 
-      // Ajouter les diplômes sans filière dans une catégorie "Autres"
-      const diplomesSansFiliere = authorizedDiplomes.filter(
-        (d) => !d.filiereId
+      // Ajouter les diplômes sans parcours dans une catégorie "Autres"
+      const diplomesSansParcours = authorizedDiplomes.filter(
+        (d) => !d.parcours || d.parcours.length === 0
       );
-      if (diplomesSansFiliere.length > 0) {
+      if (diplomesSansParcours.length > 0) {
         filieres.push({
           id: "autres",
           name: "Autres diplômes",
-          diplomas: diplomesSansFiliere.map((d) => ({
+          diplomas: diplomesSansParcours.map((d) => ({
             id: d.id,
             name: d.nom,
           })),

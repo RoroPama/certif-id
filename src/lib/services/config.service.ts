@@ -1,24 +1,18 @@
 /**
  * Service de gestion de la configuration pour le module gouvernement
- * Gère les filières, diplômes et autres paramètres de configuration
+ * Gère les parcours, diplômes et autres paramètres de configuration
  */
 
 import { apiClient } from "@/lib/api/axios";
 import { API_ENDPOINTS } from "@/lib/api/endpoints";
 
-// Types pour les filières
-export interface FiliereEntity {
+// Types pour les parcours
+export interface ParcoursEntity {
   id: string;
   nom: string;
-  description: string | null;
-  code: string | null;
-  actif: boolean;
+  duree: string;
   createdAt: Date | string;
   updatedAt: Date | string;
-  documentTypes?: DocumentTypeEntity[];
-  _count?: {
-    documentTypes: number;
-  };
 }
 
 // Enum pour les niveaux d'éducation
@@ -35,28 +29,24 @@ export interface DocumentTypeEntity {
   prix: number;
   niveau: NiveauEducation;
   serie: string | null;
-  filieres?: {
+  parcours?: {
     id: string;
     nom: string;
-    code: string | null;
+    duree: string;
   }[];
   createdAt: Date | string;
   updatedAt: Date | string;
 }
 
 // DTOs pour la création
-export interface CreateFiliereDto {
+export interface CreateParcoursDto {
   nom: string;
-  description?: string;
-  code?: string;
-  actif?: boolean;
+  duree: string;
 }
 
-export interface UpdateFiliereDto {
+export interface UpdateParcoursDto {
   nom?: string;
-  description?: string;
-  code?: string;
-  actif?: boolean;
+  duree?: string;
 }
 
 export interface CreateDocumentTypeDto {
@@ -65,7 +55,7 @@ export interface CreateDocumentTypeDto {
   prix: number;
   niveau: NiveauEducation;
   serie?: string;
-  filiereIds?: string[];
+  parcoursIds?: string[];
 }
 
 export interface UpdateDocumentTypeDto {
@@ -74,36 +64,36 @@ export interface UpdateDocumentTypeDto {
   prix?: number;
   niveau?: NiveauEducation;
   serie?: string;
-  filiereIds?: string[];
+  parcoursIds?: string[];
 }
 
 export class ConfigService {
   /**
-   * Récupérer toutes les filières
+   * Récupérer tous les parcours
    */
-  async getAllFilieres(cookieHeader?: string): Promise<FiliereEntity[]> {
+  async getAllParcours(cookieHeader?: string): Promise<ParcoursEntity[]> {
     try {
-      return await apiClient.get<FiliereEntity[]>(
-        API_ENDPOINTS.MINISTERE.FILIERES.GET_ALL,
+      return await apiClient.get<ParcoursEntity[]>(
+        API_ENDPOINTS.MINISTERE.PARCOURS.GET_ALL,
         {
           headers: cookieHeader ? { cookie: cookieHeader } : undefined,
         }
       );
     } catch (error: any) {
-      console.error("[ConfigService] Erreur getAllFilieres:", error);
+      console.error("[ConfigService] Erreur getAllParcours:", error);
       throw error;
     }
   }
 
   /**
-   * Récupérer une filière par son ID
+   * Récupérer un parcours par son ID
    */
-  async getFiliereById(
+  async getParcoursById(
     id: string,
     cookieHeader?: string
-  ): Promise<FiliereEntity> {
-    return apiClient.get<FiliereEntity>(
-      API_ENDPOINTS.MINISTERE.FILIERES.GET_BY_ID(id),
+  ): Promise<ParcoursEntity> {
+    return apiClient.get<ParcoursEntity>(
+      API_ENDPOINTS.MINISTERE.PARCOURS.GET_BY_ID(id),
       {
         headers: cookieHeader ? { cookie: cookieHeader } : undefined,
       }
@@ -111,14 +101,14 @@ export class ConfigService {
   }
 
   /**
-   * Créer une nouvelle filière
+   * Créer un nouveau parcours
    */
-  async createFiliere(
-    data: CreateFiliereDto,
+  async createParcours(
+    data: CreateParcoursDto,
     cookieHeader?: string
-  ): Promise<FiliereEntity> {
-    return apiClient.post<FiliereEntity>(
-      API_ENDPOINTS.MINISTERE.FILIERES.CREATE,
+  ): Promise<ParcoursEntity> {
+    return apiClient.post<ParcoursEntity>(
+      API_ENDPOINTS.MINISTERE.PARCOURS.CREATE,
       data,
       {
         headers: cookieHeader ? { cookie: cookieHeader } : undefined,
@@ -127,15 +117,15 @@ export class ConfigService {
   }
 
   /**
-   * Mettre à jour une filière
+   * Mettre à jour un parcours
    */
-  async updateFiliere(
+  async updateParcours(
     id: string,
-    data: UpdateFiliereDto,
+    data: UpdateParcoursDto,
     cookieHeader?: string
-  ): Promise<FiliereEntity> {
-    return apiClient.put<FiliereEntity>(
-      API_ENDPOINTS.MINISTERE.FILIERES.UPDATE(id),
+  ): Promise<ParcoursEntity> {
+    return apiClient.put<ParcoursEntity>(
+      API_ENDPOINTS.MINISTERE.PARCOURS.UPDATE(id),
       data,
       {
         headers: cookieHeader ? { cookie: cookieHeader } : undefined,
@@ -144,10 +134,10 @@ export class ConfigService {
   }
 
   /**
-   * Supprimer une filière
+   * Supprimer un parcours
    */
-  async deleteFiliere(id: string, cookieHeader?: string): Promise<void> {
-    return apiClient.delete<void>(API_ENDPOINTS.MINISTERE.FILIERES.DELETE(id), {
+  async deleteParcours(id: string, cookieHeader?: string): Promise<void> {
+    return apiClient.delete<void>(API_ENDPOINTS.MINISTERE.PARCOURS.DELETE(id), {
       headers: cookieHeader ? { cookie: cookieHeader } : undefined,
     });
   }
