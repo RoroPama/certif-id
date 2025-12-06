@@ -67,7 +67,7 @@ export interface RegistryEntry {
   studentName: string;
   universityName: string;
   diplomaTitle: string;
-  filiere: string;
+  parcours: string;
   mention: string;
   promotion: string;
   issueDate: string;

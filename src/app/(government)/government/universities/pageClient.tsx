@@ -93,10 +93,6 @@ export default function UniversitiesPageClient() {
           </p>
         </div>
         <div className="flex gap-3">
-          <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-wide hover:border-slate-300 hover:text-slate-900 transition-all rounded-sm shadow-sm group">
-            <Download className="w-3.5 h-3.5 group-hover:translate-y-0.5 transition-transform" />
-            Export CSV
-          </button>
           <button
             onClick={() => setShowCreateModal(true)}
             className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 text-white text-xs font-bold uppercase tracking-wide hover:bg-slate-800 transition-all rounded-sm shadow-lg shadow-slate-900/10"
@@ -147,21 +143,6 @@ export default function UniversitiesPageClient() {
                 {government.pages.universities.filters.private}
               </option>
             </select>
-            <button
-              onClick={() => setShowImportModal(true)}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm hover:shadow-md"
-            >
-              <Upload className="w-4 h-4" />
-              Importer
-            </button>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm hover:shadow-md"
-            >
-              <Plus className="w-4 h-4" />
-              {government.pages.universities.addButton}
-            </button>
- 
           </div>
         </div>
       </div>
@@ -299,7 +280,6 @@ export default function UniversitiesPageClient() {
         />
       )}
 
-
       {showImportModal && (
         <ImportEtablissementsModal
           onClose={() => setShowImportModal(false)}
@@ -309,7 +289,6 @@ export default function UniversitiesPageClient() {
           }}
         />
       )}
-    </>
-
+    </div>
   );
 }

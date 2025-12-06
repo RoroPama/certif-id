@@ -116,11 +116,9 @@ export default function RegistryDetailPageClient({
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <p className="text-xs text-slate-500">
-                      {detailMsg.fields.filiere}
-                    </p>
+                    <p className="text-xs text-slate-500">Parcours</p>
                     <p className="font-medium text-slate-700">
-                      {entry.filiere}
+                      {entry.parcours}
                     </p>
                   </div>
                   <div>
@@ -132,14 +130,16 @@ export default function RegistryDetailPageClient({
                     </p>
                   </div>
                 </div>
-                <div>
-                  <p className="text-xs text-slate-500">
-                    {detailMsg.fields.mention}
-                  </p>
-                  <span className="inline-block px-3 py-1 bg-blue-50 text-blue-700 rounded text-sm font-bold">
-                    {entry.mention}
-                  </span>
-                </div>
+                {entry.mention && entry.mention !== "N/A" && (
+                  <div>
+                    <p className="text-xs text-slate-500">
+                      {detailMsg.fields.mention}
+                    </p>
+                    <span className="inline-block px-3 py-1 bg-blue-50 text-blue-700 rounded text-sm font-bold">
+                      {entry.mention}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 

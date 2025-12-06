@@ -384,6 +384,11 @@ export interface DocumentSigneEntity {
     dateEmission: Date | string;
     emetteur: string;
   };
+  parcours?: {
+    id: string;
+    nom: string;
+    duree: string;
+  } | null;
   createdAt: Date | string;
   updatedAt: Date | string;
 }

@@ -42,19 +42,15 @@ function extractUniversityName(emetteur: string): string {
 }
 
 /**
- * Extrait la filière depuis le type de document
- * Pour l'instant, on utilise le type de document comme filière
- * TODO: Améliorer avec une vraie relation filière si disponible
+ * Extrait le parcours depuis les données du document
  */
-function extractFiliere(documentTypeNom: string): string {
-  // Mapping basique des types de documents vers les filières
-  const typeLower = documentTypeNom.toLowerCase();
-  if (typeLower.includes("droit")) return "Sciences Juridiques";
-  if (typeLower.includes("économie")) return "Sciences Économiques";
-  if (typeLower.includes("informatique") || typeLower.includes("génie")) return "Informatique";
-  if (typeLower.includes("médecine")) return "Médecine";
-  if (typeLower.includes("lettre")) return "Lettres Modernes";
-  return "Autre";
+function extractParcours(document: DocumentSigneEntity): string {
+  // Utiliser le parcours depuis les données backend si disponible
+  if (document.parcours?.nom) {
+    return document.parcours.nom;
+  }
+  // Fallback : utiliser le type de document si le parcours n'est pas disponible
+  return document.demandeDetails?.documentTypeNom || "Non spécifié";
 }
 
 /**
@@ -96,7 +92,7 @@ export function mapDocumentToRegistryEntry(
 
   const studentName = `${demandeDetails.prenomBeneficiaire} ${demandeDetails.nomBeneficiaire}`.trim();
   const universityName = extractUniversityName(demandeDetails.emetteur);
-  const filiere = extractFiliere(demandeDetails.documentTypeNom);
+  const parcours = extractParcours(document);
   const promotion = extractPromotion(demandeDetails.dateEmission);
   const year = extractYear(demandeDetails.dateEmission);
   const issueDate = formatDate(demandeDetails.dateEmission);
@@ -108,7 +104,7 @@ export function mapDocumentToRegistryEntry(
     studentName,
     universityName,
     diplomaTitle: demandeDetails.documentTypeNom,
-    filiere,
+    parcours,
     mention: extractMention(),
     promotion,
     issueDate,

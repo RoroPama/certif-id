@@ -11,6 +11,7 @@ import {
   Loader2,
   GraduationCap,
   AlertTriangle,
+  Trash2,
 } from "lucide-react";
 import { configService } from "@/lib/services/config.service";
 import type { UniversityFormData } from "../types";
@@ -339,7 +340,6 @@ export default function CreateUniversityModal({
                 </div>
               </div>
 
-
               {/* Colonne 2: Académique */}
               <div className="space-y-6">
                 <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
@@ -410,7 +410,7 @@ export default function CreateUniversityModal({
                         }
                         className="w-full py-2 bg-white border border-slate-300 text-slate-700 text-xs font-bold uppercase rounded hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
-                        Ajouter l'habilitation
+                        Ajouter l&apos;habilitation
                       </button>
                     </div>
 
@@ -457,7 +457,6 @@ export default function CreateUniversityModal({
                 )}
               </div>
             </div>
-
           ) : (
             // Mode Bulk
             <div className="flex flex-col items-center justify-center py-12 space-y-6">

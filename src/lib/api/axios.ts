@@ -87,11 +87,28 @@ class ApiClient {
       (error: AxiosError) => {
         if (error.response) {
           const statusCode = error.response.status;
-          const errorData = (error.response.data as {
+          const rawData = error.response.data;
+          
+          // Parser errorData de manière plus robuste
+          let errorData: {
             message?: string | string[];
             error?: string;
             statusCode?: number;
-          }) || {};
+          } = {};
+          
+          if (rawData) {
+            if (typeof rawData === "string") {
+              // Si c'est une string, créer un objet avec le message
+              errorData = { message: rawData };
+            } else if (typeof rawData === "object" && rawData !== null) {
+              // Si c'est un objet, l'utiliser directement
+              errorData = rawData as {
+                message?: string | string[];
+                error?: string;
+                statusCode?: number;
+              };
+            }
+          }
 
           // Log pour debug (uniquement en développement)
           if (process.env.NODE_ENV === "development") {
@@ -101,9 +118,9 @@ class ApiClient {
               baseURL: error.config?.baseURL,
               method: error.config?.method,
               params: error.config?.params,
-              data: error.config?.data,
-              errorData: errorData,
-              fullError: error.response.data,
+              requestData: error.config?.data,
+              responseData: rawData,
+              parsedErrorData: errorData,
               headers: error.response.headers,
             });
           }
@@ -133,7 +150,11 @@ class ApiClient {
           throw new ApiClientError(
             statusCode,
             errorMessage,
-            errorData?.error || errorData?.message as string
+            typeof errorData === "object" && errorData?.error 
+              ? errorData.error 
+              : typeof errorData === "object" && typeof errorData?.message === "string"
+              ? errorData.message
+              : undefined
           );
         }
 
