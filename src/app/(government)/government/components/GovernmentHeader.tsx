@@ -2,96 +2,88 @@
 
 import React from "react";
 import { usePathname } from "next/navigation";
-import { Search, BellRing, ChevronRight } from "lucide-react";
+import { Search, Bell, ChevronRight, Slash, Command } from "lucide-react";
 import { GOVERNMENT_ROUTES } from "@/lib/utils/constants";
 import { MESSAGES } from "@/lib/utils/messages";
 
-const getPageInfo = (
-  pathname: string
-): { title: string; breadcrumb: string } => {
-  const { government } = MESSAGES;
-  const routes: Record<string, { title: string; breadcrumb: string }> = {
-    [GOVERNMENT_ROUTES.OVERVIEW]: {
-      title: government.pages.overview.title,
-      breadcrumb: government.pages.overview.breadcrumb,
-    },
-    [GOVERNMENT_ROUTES.UNIVERSITIES]: {
-      title: government.pages.universities.title,
-      breadcrumb: government.pages.universities.breadcrumb,
-    },
-    [GOVERNMENT_ROUTES.CERTIFICATIONS]: {
-      title: government.pages.certifications.title,
-      breadcrumb: government.pages.certifications.breadcrumb,
-    },
-    [GOVERNMENT_ROUTES.REGISTRY]: {
-      title: government.pages.registry.title,
-      breadcrumb: government.pages.registry.breadcrumb,
-    },
-  };
+interface PageInfo {
+  title: string;
+  category: string;
+}
 
-  // Check for dynamic routes
-  if (pathname.startsWith(GOVERNMENT_ROUTES.UNIVERSITIES + "/")) {
-    return {
-      title: government.pages.universities.detail.backToList,
-      breadcrumb: government.pages.universities.breadcrumb,
-    };
-  }
-  if (pathname.startsWith(GOVERNMENT_ROUTES.CERTIFICATIONS + "/")) {
-    return {
-      title: government.pages.certifications.detail.title,
-      breadcrumb: government.pages.certifications.breadcrumb,
-    };
-  }
-  if (pathname.startsWith(GOVERNMENT_ROUTES.REGISTRY + "/")) {
-    return {
-      title: government.pages.registry.detail.metadata,
-      breadcrumb: government.pages.registry.breadcrumb,
-    };
-  }
-
-  return (
-    routes[pathname] || {
-      title: government.pages.overview.title,
-      breadcrumb: government.pages.overview.breadcrumb,
-    }
-  );
+const getPageInfo = (pathname: string): PageInfo => {
+  if (pathname.includes("overview"))
+    return { title: "Vue d'ensemble", category: "Pilotage" };
+  if (pathname.includes("certifications"))
+    return { title: "Certifications", category: "Opérations" };
+  if (pathname.includes("registry"))
+    return { title: "Registre National", category: "Archives" };
+  if (pathname.includes("universities"))
+    return { title: "Établissements", category: "Réseau" };
+  if (pathname.includes("config"))
+    return { title: "Configuration", category: "Système" };
+  return { title: "Accueil", category: "Gouvernement" };
 };
 
 export default function GovernmentHeader() {
   const pathname = usePathname();
-  const { title, breadcrumb } = getPageInfo(pathname);
-  const { government } = MESSAGES;
+  const { title, category } = getPageInfo(pathname);
 
   return (
-    <header className="fixed top-0 right-0 left-72 z-20 bg-slate-50/80 backdrop-blur-md border-b border-slate-200/60 px-8 py-4 flex justify-between items-center">
-      <div className="flex flex-col">
-        <h1 className="text-2xl font-serif font-bold text-slate-900 tracking-tight">
+    <header className="fixed top-0 right-0 left-64 z-20 h-20 bg-white/80 backdrop-blur-md border-b border-slate-200/60 flex justify-between items-center px-8 transition-all duration-500">
+      {/* Fil d'Ariane "Éditorial" */}
+      <div className="flex flex-col justify-center">
+        <div className="flex items-center gap-2 text-[11px] font-bold tracking-widest text-slate-400 uppercase font-sans">
+          <span>{category}</span>
+          <Slash className="w-2.5 h-2.5 text-slate-300 -rotate-12" />
+          <span className="text-slate-600">{title}</span>
+        </div>
+        <h1 className="text-xl font-serif font-medium text-slate-900 tracking-tight mt-0.5">
           {title}
         </h1>
-        <div className="flex items-center gap-2 text-sm text-slate-500 mt-0.5">
-          <span className="font-serif italic text-emerald-800">
-            {government.header.breadcrumbPrefix}
-          </span>
-          <ChevronRight className="w-3 h-3 text-emerald-500" />
-          <span className="text-slate-800 font-medium">{breadcrumb}</span>
-        </div>
       </div>
 
-      <div className="flex items-center gap-4">
-        <div className="relative group">
-          <Search className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2 group-focus-within:text-emerald-700 transition-colors" />
-          <input
-            type="text"
-            placeholder={government.header.searchPlaceholder}
-            className="pl-12 pr-6 py-3 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 shadow-sm w-96 transition-all placeholder:text-slate-400"
-          />
+      {/* Zone Actions - Minimalisme Absolu */}
+      <div className="flex items-center gap-6">
+        {/* Barre de recherche "Spotlight" */}
+        <div className="relative group w-64 focus-within:w-80 transition-all duration-300 ease-out hidden md:block">
+          <div className="absolute inset-0 bg-slate-100/50 rounded-lg transition-all duration-300 group-focus-within:bg-white group-focus-within:shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] group-focus-within:ring-1 group-focus-within:ring-slate-200"></div>
+          <div className="relative flex items-center px-3 py-2">
+            <Search className="w-4 h-4 text-slate-400 group-focus-within:text-slate-800 transition-colors" />
+            <input
+              type="text"
+              placeholder="Rechercher..."
+              className="w-full bg-transparent border-none text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-0 ml-2 font-medium"
+            />
+            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded border border-slate-200 bg-white shadow-sm opacity-50 group-focus-within:opacity-100 transition-opacity">
+              <Command className="w-3 h-3 text-slate-400" />
+              <span className="text-[10px] font-bold text-slate-500">K</span>
+            </div>
+          </div>
         </div>
-        <button className="relative p-2.5 text-slate-500 hover:bg-white hover:text-emerald-700 rounded-lg transition-all hover:shadow-md active:scale-95">
-          <BellRing className="w-5 h-5" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-emerald-500 rounded-full border border-white"></span>
-        </button>
+
+        <div className="h-8 w-px bg-slate-100"></div>
+
+        {/* Notifications & User */}
+        <div className="flex items-center gap-4">
+          <button className="relative group p-2 rounded-full hover:bg-slate-50 transition-colors">
+            <Bell className="w-5 h-5 text-slate-400 group-hover:text-slate-600 transition-colors" />
+            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white scale-0 group-hover:scale-100 transition-transform duration-200"></span>
+          </button>
+
+          <div className="flex items-center gap-3 pl-2 cursor-pointer group">
+            <div className="text-right hidden xl:block">
+              <p className="text-sm font-medium text-slate-900 group-hover:text-blue-700 transition-colors">
+                Admin. National
+              </p>
+              <p className="text-[10px] text-slate-400 font-medium">Connecté</p>
+            </div>
+            <div className="w-9 h-9 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-serif italic border-2 border-white shadow-md group-hover:shadow-lg transition-all">
+              AN
+            </div>
+          </div>
+        </div>
       </div>
     </header>
   );
 }
-
