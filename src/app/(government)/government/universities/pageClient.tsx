@@ -11,14 +11,12 @@ import {
   Clock,
   XCircle,
   AlertTriangle,
-
   MoreHorizontal,
   GraduationCap,
   MapPin,
   Download,
-
   Upload,
-
+  Eye,
 } from "lucide-react";
 import { PaginationControls } from "@/components/shared";
 import { GOVERNMENT_ROUTES } from "@/lib/utils/constants";
@@ -246,7 +244,7 @@ export default function UniversitiesPageClient() {
                       href={GOVERNMENT_ROUTES.UNIVERSITY_DETAIL(university.id)}
                       className="inline-flex items-center justify-center w-8 h-8 rounded hover:bg-slate-200 text-slate-400 hover:text-slate-700 transition-all"
                     >
-                      <MoreHorizontal className="w-4 h-4" />
+                      <Eye className="w-4 h-4" />
                     </Link>
                   </td>
                 </tr>

@@ -424,6 +424,7 @@ export interface EtablissementEntity {
     users: number;
     demandes: number;
     documentsAutorises: number;
+    documentsSignes?: number;
   };
   documentsAutorises?: {
     id: string;
