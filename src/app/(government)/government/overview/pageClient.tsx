@@ -6,19 +6,14 @@ import {
   Award,
   Building2,
   Users,
-  AlertTriangle,
-  ChevronRight,
-  SlidersHorizontal,
-  RotateCcw,
-  DollarSign,
-  FileText,
-  TrendingUp,
+  AlertCircle,
+  ArrowUpRight,
+  Download,
+  Filter,
   Calendar,
-  CheckCircle2,
-  XCircle,
-  Clock,
+  MoreHorizontal,
 } from "lucide-react";
-import { StatCard, SearchableSelect } from "@/components/shared";
+import { SearchableSelect } from "@/components/shared";
 import { GOVERNMENT_ROUTES } from "@/lib/utils/constants";
 import { MESSAGES } from "@/lib/utils/messages";
 import { useGovernmentDashboard } from "../hooks";
@@ -30,6 +25,45 @@ import {
 import LoadingState from "@/app/(institution)/institution/components/LoadingState";
 import ErrorState from "@/app/(institution)/institution/components/ErrorState";
 
+// Carte KPI "Haute Couture" : Minimaliste, Serif pour les chiffres
+const SophisticatedMetric = ({
+  label,
+  value,
+  trend,
+  trendDirection = "neutral",
+}: {
+  label: string;
+  value: string | number;
+  trend?: string;
+  trendDirection?: "positive" | "negative" | "neutral";
+}) => (
+  <div className="group bg-white p-6 rounded-none border-r border-b border-slate-100 first:rounded-tl-2xl last:rounded-br-2xl hover:bg-slate-50/50 transition-colors relative">
+    <div className="flex justify-between items-start mb-4">
+      <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 group-hover:text-slate-600 transition-colors">
+        {label}
+      </p>
+      {trend && (
+        <span
+          className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${
+            trendDirection === "positive"
+              ? "bg-emerald-50 text-emerald-700 border-emerald-100"
+              : trendDirection === "negative"
+              ? "bg-rose-50 text-rose-700 border-rose-100"
+              : "bg-slate-50 text-slate-600 border-slate-100"
+          }`}
+        >
+          {trend}
+        </span>
+      )}
+    </div>
+    <div className="flex items-baseline gap-1">
+      <h3 className="text-4xl font-serif text-slate-900 tracking-tight">
+        {value}
+      </h3>
+    </div>
+  </div>
+);
+
 export default function OverviewPageClient() {
   const [dateFilter, setDateFilter] = useState<{
     startDate?: string;
@@ -40,354 +74,191 @@ export default function OverviewPageClient() {
 
   const {
     stats,
-    topEtablissements,
-    revenueSummary,
-    loading,
-    error,
-    refetch,
-  } = useGovernmentDashboard({
-    filters: dateFilter,
-  });
+    filters,
+    universities,
+    years,
+    filieres,
+    handleFilterChange,
+    resetFilters,
+  } = useOverview();
 
-  const { government } = MESSAGES;
-
-  // Fonction pour formater le montant
-  const formatAmount = (amount: number) => {
-    return new Intl.NumberFormat("fr-FR", {
-      style: "currency",
-      currency: "XOF",
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
-
-  // Fonction pour formater la date
-  const formatDate = (date: Date | string) => {
-    return new Date(date).toLocaleDateString("fr-FR", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
-  };
-
-  if (loading) {
-    return <LoadingState />;
-  }
-
-  if (error) {
-    return <ErrorState message={error} onRetry={refetch} />;
-  }
+  const universityOptions = universities.map((u) => ({
+    value: u.id,
+    label: u.name,
+  }));
+  const yearOptions = years.map((y) => ({ value: y, label: y }));
+  const filiereOptions = filieres.map((f) => ({ value: f.id, label: f.name }));
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Filtres de date */}
-      <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-        <div className="flex items-center gap-4">
-          <Calendar className="w-5 h-5 text-slate-500" />
-          <div className="flex items-center gap-4 flex-1">
-            <div>
-              <label className="text-sm text-slate-600 mb-1 block">
-                Date de début
-              </label>
-              <input
-                type="date"
-                value={dateFilter.startDate || ""}
-                onChange={(e) =>
-                  setDateFilter({ ...dateFilter, startDate: e.target.value })
-                }
-                className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
-            </div>
-            <div>
-              <label className="text-sm text-slate-600 mb-1 block">
-                Date de fin
-              </label>
-              <input
-                type="date"
-                value={dateFilter.endDate || ""}
-                onChange={(e) =>
-                  setDateFilter({ ...dateFilter, endDate: e.target.value })
-                }
-                className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
-            </div>
-            {(dateFilter.startDate || dateFilter.endDate) && (
-              <button
-                onClick={() => setDateFilter({})}
-                className="mt-6 px-4 py-2 text-sm text-slate-600 hover:text-slate-900 border border-slate-200 rounded-lg hover:bg-slate-50"
-              >
-                Réinitialiser
-              </button>
-            )}
-          </div>
+    <div className="space-y-10 animate-in fade-in duration-700 pb-12">
+      {/* Header Contextuel */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 border-b border-slate-100 pb-6">
+        <div>
+          <h2 className="text-3xl font-serif font-medium text-slate-900">
+            Tableau de Bord
+          </h2>
+          <p className="text-slate-500 mt-2 text-sm max-w-lg leading-relaxed">
+            Surveillance en temps réel des accréditations académiques et de la
+            conformité nationale.
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-wide hover:border-slate-300 hover:text-slate-900 transition-all rounded-sm shadow-sm">
+            <Calendar className="w-3.5 h-3.5" /> Période : 2024
+          </button>
+          <button className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 text-white text-xs font-bold uppercase tracking-wide hover:bg-slate-800 transition-all rounded-sm shadow-lg shadow-slate-900/10">
+            <Download className="w-3.5 h-3.5" /> Exporter Données
+          </button>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-        <StatCard
-          title="Total demandes"
-          value={stats?.demandes?.total?.toLocaleString() || "0"}
-          trend={`${stats?.demandes?.signee || 0} signées`}
-          color="blue"
-          icon={FileText}
-          showTrendIcon={false}
-        />
-        <StatCard
-          title="Demandes en attente"
-          value={stats?.demandes?.enAttente?.toLocaleString() || "0"}
-          trend={MESSAGES.status.inProgress}
-          color="amber"
-          icon={Clock}
-        />
-        <StatCard
-          title="Demandes approuvées"
-          value={stats?.demandes?.approuvees?.toLocaleString() || "0"}
-          trend={`${stats?.demandes?.signee || 0} signées`}
-          color="emerald"
-          icon={CheckCircle2}
-          showTrendIcon={false}
-        />
-        <StatCard
-          title="Chiffre d'affaires"
-          value={formatAmount(stats?.chiffreAffaires?.total || 0)}
-          trend={stats?.chiffreAffaires?.periode || "Toutes périodes"}
-          color="purple"
-          icon={DollarSign}
-          showTrendIcon={false}
-        />
-        <StatCard
-          title="Établissements"
-          value={stats?.etablissements?.total?.toLocaleString() || "0"}
-          trend={`${stats?.etablissements?.actifs || 0} actifs`}
-          color="emerald"
-          icon={Building2}
-          showTrendIcon={false}
-        />
-        <StatCard
-          title="Demandes rejetées"
-          value={stats?.demandes?.rejetee?.toLocaleString() || "0"}
-          trend={MESSAGES.common.rejections}
-          color="rose"
-          icon={XCircle}
-        />
-        <StatCard
-          title="Documents signés"
-          value={stats?.demandes?.signee?.toLocaleString() || "0"}
-          trend="Total"
-          color="green"
-          icon={Award}
-          showTrendIcon={false}
-        />
-        <StatCard
-          title="Montant total dû"
-          value={formatAmount(stats?.etablissements?.montantTotalDu || 0)}
-          trend="Par établissements"
-          color="orange"
-          icon={TrendingUp}
-          showTrendIcon={false}
-        />
+      {/* Grille de Métriques "Fusionnée" */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-slate-100">
+          <SophisticatedMetric
+            label="Diplômes Certifiés"
+            value={stats.totalDiplomas.toLocaleString()}
+            trend="+8.2%"
+            trendDirection="positive"
+          />
+          <SophisticatedMetric
+            label="Universités Actives"
+            value={stats.activeUniversities}
+            trend="Stable"
+          />
+          <SophisticatedMetric
+            label="Dossiers en attente"
+            value={stats.pendingRequests}
+            trend="-12%"
+            trendDirection="positive"
+          />
+          <SophisticatedMetric
+            label="Taux de Rejet"
+            value={stats.rejectionRate}
+            trend="+0.4%"
+            trendDirection="negative"
+          />
+        </div>
       </div>
 
-      {/* Main Content */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* Charts Section */}
-        <div className="xl:col-span-2 space-y-6">
-          {/* Évolution mensuelle */}
-          {stats && stats.evolution.length > 0 && (
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-              <div className="flex justify-between items-start mb-6">
-                <div>
-                  <h3 className="font-serif font-bold text-lg text-slate-900">
-                    Évolution mensuelle
-                  </h3>
-                  <p className="text-sm text-slate-500 mt-1">
-                    Demandes signées et chiffre d'affaires sur 12 mois
-                  </p>
-                </div>
-                <Link
-                  href={GOVERNMENT_ROUTES.REGISTRY}
-                  className="text-sm text-emerald-700 font-medium hover:underline flex items-center gap-1"
-                >
-                  {MESSAGES.common.viewAll || "Tout voir"}{" "}
-                  <ChevronRight className="w-3 h-3" />
-                </Link>
-              </div>
-              <div className="h-64">
-                <MonthlyEvolutionChart
-                  data={stats.evolution.map((item) => ({
-                    mois: item.periode,
-                    count: item.demandesSignees,
-                  }))}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Répartition par statut */}
-          {stats && (
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-              <h3 className="font-serif font-bold text-lg text-slate-900 mb-4">
-                Répartition des demandes par statut
+      {/* Section Principale : Graphiques & Listes */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Graphique "Analytique" */}
+        <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-8 shadow-sm">
+          <div className="flex justify-between items-center mb-10">
+            <div>
+              <h3 className="text-lg font-serif font-medium text-slate-900">
+                Volume d'Émission
               </h3>
-              <StatusChart
-                data={[
-                  { statut: "EN_ATTENTE", count: stats.demandes.enAttente },
-                  { statut: "APPROUVE", count: stats.demandes.approuvees },
-                  { statut: "REJETE", count: stats.demandes.rejetee },
-                  { statut: "SIGNEE", count: stats.demandes.signee },
-                ]}
-              />
+              <p className="text-xs text-slate-400 mt-1 uppercase tracking-wide font-bold">
+                Vue annuelle
+              </p>
+            </div>
+            <button className="text-slate-400 hover:text-slate-900 transition-colors">
+              <MoreHorizontal className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Visualisation épurée */}
+          <div className="h-72 flex items-end gap-6 relative">
+            {/* Grille de fond très légère */}
+            <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="w-full h-px bg-slate-50"></div>
+              ))}
+ 
             </div>
           )}
 
-          {/* Chiffre d'affaires par type de document */}
-          {revenueSummary &&
-            revenueSummary.byDocumentType.length > 0 && (
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-                <h3 className="font-serif font-bold text-lg text-slate-900 mb-4">
-                  Chiffre d'affaires par type de document
-                </h3>
-                <DocumentTypeChart
-                  data={revenueSummary.byDocumentType.map((item) => ({
-                    documentType: item.documentType,
-                    count: item.count,
-                    montantTotal: item.revenue,
-                  }))}
-                  showAmount={true}
-                />
+
+            {stats.chartData.length > 0 ? (
+              stats.chartData.map((item, i) => (
+                <div
+                  key={i}
+                  className="flex-1 flex flex-col justify-end gap-3 group h-full relative z-10"
+                >
+                  <div
+                    className="w-full bg-slate-900 opacity-90 hover:opacity-100 transition-all duration-500 relative"
+                    style={{ height: `${Math.max(item.heightPercent, 2)}%` }}
+                  >
+                    {/* Valeur au survol */}
+                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-white text-slate-900 text-xs font-bold py-1 px-2 border border-slate-100 shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-300">
+                      {item.count}
+                    </div>
+                  </div>
+                  <div className="h-px w-full bg-slate-200"></div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider text-center">
+                    {item.year}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-slate-300 text-sm italic font-serif">
+                Données indisponibles pour la période sélectionnée
               </div>
             )}
+          </div>
+        </div>
 
-          {/* Top établissements */}
-          {topEtablissements.length > 0 && (
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-              <h3 className="font-serif font-bold text-lg text-slate-900 mb-6">
-                Top établissements
-              </h3>
-              <div className="space-y-4">
-                {topEtablissements.map((etab, i) => (
-                  <Link
-                    key={etab.etablissement.id}
-                    href={GOVERNMENT_ROUTES.UNIVERSITY_DETAIL(
-                      etab.etablissement.id
-                    )}
-                    className="flex items-center gap-4 p-4 rounded-lg bg-slate-50 border border-slate-100 hover:border-emerald-200 transition-colors group"
+        {/* Panneau Latéral "Liste Executive" */}
+        <div className="bg-white rounded-xl border border-slate-200 flex flex-col shadow-sm">
+          <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/30">
+            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
+              Top Filières
+            </h3>
+            <Link
+              href={GOVERNMENT_ROUTES.REGISTRY}
+              className="text-xs text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1 transition-colors"
+            >
+              Détails <ArrowUpRight className="w-3 h-3" />
+            </Link>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-2">
+            {stats.topFilieres.length > 0 ? (
+              <div className="space-y-1">
+                {stats.topFilieres.map((filiere, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-lg transition-colors group cursor-default"
                   >
-                    <span className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 font-bold text-sm flex items-center justify-center">
-                      {i + 1}
-                    </span>
-                    <div className="flex-1">
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-sm font-medium text-slate-800 group-hover:text-emerald-700">
-                          {etab.etablissement.nom}
-                        </span>
-                        <span className="text-xs text-slate-500">
-                          {etab.demandesSignees} demandes
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs text-slate-500">
-                          {etab.etablissement.type}
-                        </span>
-                        <span className="text-xs font-bold text-emerald-700">
-                          {formatAmount(etab.chiffreAffaires)}
-                        </span>
+                    <div className="flex items-center gap-3 overflow-hidden">
+                      <span className="flex-shrink-0 w-6 h-6 rounded bg-slate-100 text-slate-500 text-[10px] font-bold flex items-center justify-center">
+                        {i + 1}
+                      </span>
+                      <span className="text-sm text-slate-600 font-medium truncate group-hover:text-slate-900 transition-colors">
+                        {filiere.name}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-slate-400 tabular-nums">
+                        {filiere.count}
+                      </span>
+                      <div className="w-12 h-1 bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-slate-800"
+                          style={{ width: `${filiere.percent}%` }}
+                        ></div>
+ 
                       </div>
                     </div>
                   </Link>
                 ))}
               </div>
-            </div>
-          )}
-        </div>
 
-        {/* Sidebar avec résumé */}
-        <div className="xl:col-span-1 space-y-6">
-          {/* Résumé chiffre d'affaires */}
-          {revenueSummary && (
-            <div className="bg-gradient-to-br from-emerald-950 via-emerald-900 to-emerald-950 rounded-xl p-6 text-white shadow-xl shadow-emerald-900/20 relative overflow-hidden border border-white/10">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 blur-[80px] rounded-full pointer-events-none"></div>
-              <h3 className="font-serif font-bold text-xl mb-1 relative z-10">
-                Résumé financier
-              </h3>
-              <p className="text-emerald-200/80 text-sm mb-6 relative z-10">
-                {revenueSummary.period}
-              </p>
-              <div className="space-y-4 relative z-10">
-                <div>
-                  <p className="text-emerald-200/80 text-xs mb-1">
-                    Chiffre d'affaires total
-                  </p>
-                  <p className="text-3xl font-bold">
-                    {formatAmount(revenueSummary.totalRevenue)}
-                  </p>
-                </div>
-                <div className="pt-4 border-t border-white/10">
-                  <p className="text-emerald-200/80 text-xs mb-2">
-                    Par type de document
-                  </p>
-                  <div className="space-y-2">
-                    {revenueSummary.byDocumentType
-                      .slice(0, 5)
-                      .map((item, i) => (
-                        <div
-                          key={i}
-                          className="flex justify-between items-center text-sm"
-                        >
-                          <span className="text-emerald-100 truncate flex-1 mr-2">
-                            {item.documentType}
-                          </span>
-                          <span className="font-bold">
-                            {formatAmount(item.revenue)}
-                          </span>
-                        </div>
-                      ))}
-                  </div>
-                </div>
+            ) : (
+              <div className="flex-1 flex items-center justify-center text-slate-400 text-xs p-8">
+                Aucune donnée
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
-          {/* Statistiques établissements */}
-          {stats && (
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-              <h3 className="font-serif font-bold text-lg text-slate-900 mb-4">
-                Statistiques établissements
-              </h3>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-slate-600">Total</span>
-                  <span className="text-sm font-bold text-slate-900">
-                    {stats.etablissements.total}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-slate-600">Actifs</span>
-                  <span className="text-sm font-bold text-emerald-700">
-                    {stats.etablissements.actifs}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-slate-600">
-                    Total demandes
-                  </span>
-                  <span className="text-sm font-bold text-slate-900">
-                    {stats.etablissements.totalDemandes.toLocaleString()}
-                  </span>
-                </div>
-                <div className="pt-4 border-t border-slate-200">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-slate-600">
-                      Montant total dû
-                    </span>
-                    <span className="text-sm font-bold text-orange-700">
-                      {formatAmount(stats.etablissements.montantTotalDu)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          <div className="p-4 border-t border-slate-100 bg-slate-50/30 rounded-b-xl">
+            <button className="w-full py-2 text-xs font-bold text-slate-500 hover:text-slate-800 uppercase tracking-widest transition-colors">
+              Voir le rapport complet
+            </button>
+          </div>
+ 
         </div>
       </div>
     </div>
