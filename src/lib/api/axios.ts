@@ -87,15 +87,53 @@ class ApiClient {
       (error: AxiosError) => {
         if (error.response) {
           const statusCode = error.response.status;
-          const errorData = error.response.data as {
-            message?: string;
+          const errorData = (error.response.data as {
+            message?: string | string[];
             error?: string;
-          };
+            statusCode?: number;
+          }) || {};
+
+          // Log pour debug (uniquement en développement)
+          if (process.env.NODE_ENV === "development") {
+            console.error("[API Error]", {
+              status: statusCode,
+              url: error.config?.url,
+              baseURL: error.config?.baseURL,
+              method: error.config?.method,
+              params: error.config?.params,
+              data: error.config?.data,
+              errorData: errorData,
+              fullError: error.response.data,
+              headers: error.response.headers,
+            });
+          }
+
+          // Gérer les messages de validation qui peuvent être un tableau
+          let errorMessage: string;
+          if (errorData && typeof errorData === "object") {
+            if (Array.isArray(errorData.message)) {
+              errorMessage = errorData.message.join(", ");
+            } else if (errorData.message && typeof errorData.message === "string") {
+              errorMessage = errorData.message;
+            } else if (errorData.error && typeof errorData.error === "string") {
+              errorMessage = errorData.error;
+            } else if (error.message) {
+              errorMessage = error.message;
+            } else {
+              errorMessage = `Erreur serveur (${statusCode})`;
+            }
+          } else if (typeof errorData === "string") {
+            errorMessage = errorData;
+          } else if (error.message) {
+            errorMessage = error.message;
+          } else {
+            errorMessage = `Erreur serveur (${statusCode})`;
+          }
 
           throw new ApiClientError(
             statusCode,
-            errorData.message || error.message || MESSAGES.errors.generic,
-            errorData.error
+            errorMessage,
+            errorData?.error || errorData?.message as string
           );
         }
 

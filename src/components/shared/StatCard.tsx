@@ -7,7 +7,7 @@ interface StatCardProps {
   title: string;
   value: string | number;
   trend?: string;
-  color: "blue" | "emerald" | "amber" | "rose" | "slate";
+  color: "blue" | "emerald" | "amber" | "rose" | "slate" | "purple" | "green" | "orange" | "red";
   icon: React.ComponentType<{ className?: string }>;
   showTrendIcon?: boolean;
 }
@@ -48,6 +48,34 @@ const colorClasses = {
     corner: "bg-slate-50",
     badge: "bg-slate-50 text-slate-700",
   },
+  purple: {
+    bg: "bg-purple-50",
+    text: "text-purple-700",
+    ring: "ring-purple-100",
+    corner: "bg-purple-50",
+    badge: "bg-purple-50 text-purple-700",
+  },
+  green: {
+    bg: "bg-green-50",
+    text: "text-green-700",
+    ring: "ring-green-100",
+    corner: "bg-green-50",
+    badge: "bg-green-50 text-green-700",
+  },
+  orange: {
+    bg: "bg-orange-50",
+    text: "text-orange-700",
+    ring: "ring-orange-100",
+    corner: "bg-orange-50",
+    badge: "bg-orange-50 text-orange-700",
+  },
+  red: {
+    bg: "bg-red-50",
+    text: "text-red-700",
+    ring: "ring-red-100",
+    corner: "bg-red-50",
+    badge: "bg-red-50 text-red-700",
+  },
 };
 
 export default function StatCard({
@@ -58,7 +86,7 @@ export default function StatCard({
   icon: Icon,
   showTrendIcon = true,
 }: StatCardProps) {
-  const colors = colorClasses[color];
+  const colors = colorClasses[color] || colorClasses.slate; // Fallback vers slate si couleur non trouvée
 
   return (
     <div className="group bg-white p-6 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-all relative overflow-hidden">

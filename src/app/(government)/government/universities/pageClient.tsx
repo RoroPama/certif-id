@@ -11,12 +11,14 @@ import {
   Clock,
   XCircle,
   AlertTriangle,
+  Upload,
 } from "lucide-react";
 import { PaginationControls } from "@/components/shared";
 import { GOVERNMENT_ROUTES } from "@/lib/utils/constants";
 import { MESSAGES } from "@/lib/utils/messages";
 import { useUniversities } from "../hooks";
 import CreateUniversityModal from "./CreateUniversityModal";
+import ImportEtablissementsModal from "./ImportEtablissementsModal";
 
 export default function UniversitiesPageClient() {
   const {
@@ -32,9 +34,11 @@ export default function UniversitiesPageClient() {
     handleTypeFilterChange,
     handlePageChange,
     addUniversity,
+    refreshUniversities,
   } = useUniversities();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { government } = MESSAGES;
 
@@ -112,6 +116,13 @@ export default function UniversitiesPageClient() {
                 {government.pages.universities.filters.private}
               </option>
             </select>
+            <button
+              onClick={() => setShowImportModal(true)}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm hover:shadow-md"
+            >
+              <Upload className="w-4 h-4" />
+              Importer
+            </button>
             <button
               onClick={() => setShowCreateModal(true)}
               className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm hover:shadow-md"
@@ -254,6 +265,16 @@ export default function UniversitiesPageClient() {
             } finally {
               setIsSubmitting(false);
             }
+          }}
+        />
+      )}
+
+      {showImportModal && (
+        <ImportEtablissementsModal
+          onClose={() => setShowImportModal(false)}
+          onSuccess={async () => {
+            // Recharger la liste des établissements
+            await refreshUniversities();
           }}
         />
       )}

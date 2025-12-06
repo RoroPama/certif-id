@@ -23,12 +23,16 @@ const COLORS = {
   EN_ATTENTE: "#f59e0b", // amber
   APPROUVE: "#10b981", // emerald
   REJETE: "#ef4444", // red
+  SIGNEE: "#3b82f6", // blue
+  TRAITEE: "#10b981", // emerald
 };
 
 const STATUS_LABELS: Record<string, string> = {
   EN_ATTENTE: "En attente",
   APPROUVE: "Approuvé",
   REJETE: "Rejeté",
+  SIGNEE: "Signée",
+  TRAITEE: "Traitée",
 };
 
 export function StatusChart({ data }: StatusChartProps) {
