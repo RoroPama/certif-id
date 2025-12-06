@@ -11,16 +11,21 @@ import {
   Clock,
   XCircle,
   AlertTriangle,
+
   MoreHorizontal,
   GraduationCap,
   MapPin,
   Download,
+
+  Upload,
+
 } from "lucide-react";
 import { PaginationControls } from "@/components/shared";
 import { GOVERNMENT_ROUTES } from "@/lib/utils/constants";
 import { MESSAGES } from "@/lib/utils/messages";
 import { useUniversities } from "../hooks";
 import CreateUniversityModal from "./CreateUniversityModal";
+import ImportEtablissementsModal from "./ImportEtablissementsModal";
 
 export default function UniversitiesPageClient() {
   const {
@@ -36,9 +41,11 @@ export default function UniversitiesPageClient() {
     handleTypeFilterChange,
     handlePageChange,
     addUniversity,
+    refreshUniversities,
   } = useUniversities();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { government } = MESSAGES;
 
@@ -113,25 +120,48 @@ export default function UniversitiesPageClient() {
               onChange={(e) => handleSearchChange(e.target.value)}
             />
           </div>
-          <div className="h-6 w-px bg-slate-200 mx-2"></div>
-          <div className="flex gap-1">
-            {["all", "PUBLIC", "PRIVE"].map((type) => (
-              <button
-                key={type}
-                onClick={() => handleTypeFilterChange(type)}
-                className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition-all ${
-                  typeFilter === type
-                    ? "bg-slate-100 text-slate-900"
-                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
-                }`}
-              >
-                {type === "all"
-                  ? "Tous"
-                  : type === "PUBLIC"
-                  ? "Public"
-                  : "Privé"}
-              </button>
-            ))}
+
+          <div className="flex gap-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder={MESSAGES.common.search}
+                className="pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 outline-none w-64"
+                value={search}
+                onChange={(e) => handleSearchChange(e.target.value)}
+              />
+            </div>
+            <select
+              className="px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-600 outline-none focus:ring-2 focus:ring-emerald-500/20"
+              value={typeFilter}
+              onChange={(e) => handleTypeFilterChange(e.target.value)}
+            >
+              <option value="all">
+                {government.pages.universities.filters.allTypes}
+              </option>
+              <option value="PUBLIC">
+                {government.pages.universities.filters.public}
+              </option>
+              <option value="PRIVE">
+                {government.pages.universities.filters.private}
+              </option>
+            </select>
+            <button
+              onClick={() => setShowImportModal(true)}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm hover:shadow-md"
+            >
+              <Upload className="w-4 h-4" />
+              Importer
+            </button>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm hover:shadow-md"
+            >
+              <Plus className="w-4 h-4" />
+              {government.pages.universities.addButton}
+            </button>
+ 
           </div>
         </div>
       </div>
@@ -268,6 +298,18 @@ export default function UniversitiesPageClient() {
           }}
         />
       )}
-    </div>
+
+
+      {showImportModal && (
+        <ImportEtablissementsModal
+          onClose={() => setShowImportModal(false)}
+          onSuccess={async () => {
+            // Recharger la liste des établissements
+            await refreshUniversities();
+          }}
+        />
+      )}
+    </>
+
   );
 }

@@ -339,6 +339,7 @@ export default function CreateUniversityModal({
                 </div>
               </div>
 
+
               {/* Colonne 2: Académique */}
               <div className="space-y-6">
                 <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
@@ -456,6 +457,7 @@ export default function CreateUniversityModal({
                 )}
               </div>
             </div>
+
           ) : (
             // Mode Bulk
             <div className="flex flex-col items-center justify-center py-12 space-y-6">

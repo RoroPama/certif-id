@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import {
   Award,
@@ -16,7 +16,14 @@ import {
 import { SearchableSelect } from "@/components/shared";
 import { GOVERNMENT_ROUTES } from "@/lib/utils/constants";
 import { MESSAGES } from "@/lib/utils/messages";
-import { useOverview } from "../hooks";
+import { useGovernmentDashboard } from "../hooks";
+import {
+  MonthlyEvolutionChart,
+  DocumentTypeChart,
+  StatusChart,
+} from "@/app/(institution)/institution/components/charts";
+import LoadingState from "@/app/(institution)/institution/components/LoadingState";
+import ErrorState from "@/app/(institution)/institution/components/ErrorState";
 
 // Carte KPI "Haute Couture" : Minimaliste, Serif pour les chiffres
 const SophisticatedMetric = ({
@@ -58,6 +65,13 @@ const SophisticatedMetric = ({
 );
 
 export default function OverviewPageClient() {
+  const [dateFilter, setDateFilter] = useState<{
+    startDate?: string;
+    endDate?: string;
+    etablissementId?: string;
+    documentTypeId?: string;
+  }>({});
+
   const {
     stats,
     filters,
@@ -152,7 +166,10 @@ export default function OverviewPageClient() {
               {[...Array(5)].map((_, i) => (
                 <div key={i} className="w-full h-px bg-slate-50"></div>
               ))}
+ 
             </div>
+          )}
+
 
             {stats.chartData.length > 0 ? (
               stats.chartData.map((item, i) => (
@@ -222,11 +239,13 @@ export default function OverviewPageClient() {
                           className="h-full bg-slate-800"
                           style={{ width: `${filiere.percent}%` }}
                         ></div>
+ 
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
+
             ) : (
               <div className="flex-1 flex items-center justify-center text-slate-400 text-xs p-8">
                 Aucune donnée
@@ -239,6 +258,7 @@ export default function OverviewPageClient() {
               Voir le rapport complet
             </button>
           </div>
+ 
         </div>
       </div>
     </div>
