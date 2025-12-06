@@ -102,5 +102,8 @@ export interface UniversityFormData {
     [documentTypeId: string]: string[]; // parcoursIds
   };
   documentTypeNames?: string[]; // Noms des diplômes (pour compatibilité backend)
+  documentTypeParcoursNames?: {
+    [documentTypeName: string]: string[]; // Noms des parcours
+  };
 }
 
