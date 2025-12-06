@@ -68,14 +68,9 @@ export default function OverviewPageClient() {
   const totalDiplomas = stats?.demandes.signee || 0;
   const activeUniversities = stats?.etablissements.actifs || 0;
   const pendingRequests = stats?.demandes.enAttente || 0;
-  const totalDemandes = stats?.demandes.total || 0;
   const rejectedDemandes = stats?.demandes.rejetee || 0;
-  const rejectionRate =
-    totalDemandes > 0
-      ? `${((rejectedDemandes / totalDemandes) * 100).toFixed(1)}%`
-      : "0%";
 
-  // Mapper l'évolution pour le graphique
+  // Mapper l'évolution pour le graphique (demandes signées)
   const chartData =
     stats?.evolution.map((item) => {
       const maxDemandes = Math.max(
@@ -86,6 +81,20 @@ export default function OverviewPageClient() {
         count: item.demandesSignees,
         heightPercent:
           maxDemandes > 0 ? (item.demandesSignees / maxDemandes) * 100 : 5,
+      };
+    }) || [];
+
+  // Mapper l'évolution du chiffre d'affaires pour un second graphique
+  const revenueChartData =
+    stats?.evolution.map((item) => {
+      const maxRevenue = Math.max(
+        ...(stats.evolution.map((e) => e.chiffreAffaires) || [1])
+      );
+      return {
+        year: item.periode,
+        revenue: item.chiffreAffaires,
+        heightPercent:
+          maxRevenue > 0 ? (item.chiffreAffaires / maxRevenue) * 100 : 5,
       };
     }) || [];
 
@@ -141,117 +150,235 @@ export default function OverviewPageClient() {
 
       {/* Grille de Métriques "Fusionnée" */}
       {!loading && stats && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-slate-100">
-            <SophisticatedMetric
-              label="Diplômes Certifiés"
-              value={totalDiplomas.toLocaleString()}
-              trend={
-                stats.demandes.total > 0
-                  ? `+${(
-                      (stats.demandes.signee / stats.demandes.total) *
-                      100
-                    ).toFixed(1)}%`
-                  : "0%"
-              }
-              trendDirection="positive"
-            />
-            <SophisticatedMetric
-              label="Universités Actives"
-              value={activeUniversities}
-              trend={
-                stats.etablissements.total > 0
-                  ? `${(
-                      (activeUniversities / stats.etablissements.total) *
-                      100
-                    ).toFixed(0)}%`
-                  : "0%"
-              }
-            />
-            <SophisticatedMetric
-              label="Dossiers en attente"
-              value={pendingRequests}
-              trend={
-                stats.demandes.total > 0
-                  ? `${((pendingRequests / stats.demandes.total) * 100).toFixed(
-                      1
-                    )}%`
-                  : "0%"
-              }
-              trendDirection="neutral"
-            />
-            <SophisticatedMetric
-              label="Taux de Rejet"
-              value={rejectionRate}
-              trend={
-                stats.demandes.total > 0
-                  ? `${(
-                      (rejectedDemandes / stats.demandes.total) *
-                      100
-                    ).toFixed(1)}%`
-                  : "0%"
-              }
-              trendDirection="negative"
-            />
+        <>
+          {/* Première ligne de métriques */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-slate-100">
+              <SophisticatedMetric
+                label="Diplômes Certifiés"
+                value={totalDiplomas.toLocaleString()}
+                trend={
+                  stats.demandes.total > 0
+                    ? `+${(
+                        (stats.demandes.signee / stats.demandes.total) *
+                        100
+                      ).toFixed(1)}%`
+                    : "0%"
+                }
+                trendDirection="positive"
+              />
+              <SophisticatedMetric
+                label="Universités Actives"
+                value={activeUniversities}
+                trend={
+                  stats.etablissements.total > 0
+                    ? `${(
+                        (activeUniversities / stats.etablissements.total) *
+                        100
+                      ).toFixed(0)}%`
+                    : "0%"
+                }
+              />
+              <SophisticatedMetric
+                label="Dossiers en attente"
+                value={pendingRequests}
+                trend={
+                  stats.demandes.total > 0
+                    ? `${(
+                        (pendingRequests / stats.demandes.total) *
+                        100
+                      ).toFixed(1)}%`
+                    : "0%"
+                }
+                trendDirection="neutral"
+              />
+            </div>
           </div>
-        </div>
+
+          {/* Deuxième ligne de métriques */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-slate-100">
+              <SophisticatedMetric
+                label="Total Demandes"
+                value={stats.demandes.total.toLocaleString()}
+                trend={`${stats.etablissements.total} établissements`}
+              />
+              <SophisticatedMetric
+                label="Demandes Rejetées"
+                value={rejectedDemandes.toLocaleString()}
+                trend={
+                  stats.demandes.total > 0
+                    ? `${(
+                        (rejectedDemandes / stats.demandes.total) *
+                        100
+                      ).toFixed(1)}%`
+                    : "0%"
+                }
+                trendDirection="negative"
+              />
+              <SophisticatedMetric
+                label="Demandes Approuvées"
+                value={stats.demandes.approuvees.toLocaleString()}
+                trend={
+                  stats.demandes.total > 0
+                    ? `${(
+                        (stats.demandes.approuvees / stats.demandes.total) *
+                        100
+                      ).toFixed(1)}%`
+                    : "0%"
+                }
+                trendDirection="positive"
+              />
+              <SophisticatedMetric
+                label="Chiffre d'Affaires"
+                value={`${(stats.chiffreAffaires.total / 1000).toFixed(
+                  1
+                )}K FCFA`}
+                trend={stats.chiffreAffaires.periode}
+              />
+            </div>
+          </div>
+        </>
       )}
 
       {/* Section Principale : Graphiques & Listes */}
       {!loading && stats && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Graphique "Analytique" */}
-          <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-8 shadow-sm">
-            <div className="flex justify-between items-center mb-10">
-              <div>
-                <h3 className="text-lg font-serif font-medium text-slate-900">
-                  Volume d&apos;Émission
-                </h3>
-                <p className="text-xs text-slate-400 mt-1 uppercase tracking-wide font-bold">
-                  Évolution des demandes signées
-                </p>
+          {/* Graphiques "Analytiques" */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Graphique Demandes Signées */}
+            <div className="bg-white rounded-xl border border-slate-200 p-8 shadow-sm">
+              <div className="flex justify-between items-center mb-10">
+                <div>
+                  <h3 className="text-lg font-serif font-medium text-slate-900">
+                    Volume d&apos;Émission
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1 uppercase tracking-wide font-bold">
+                    Évolution des demandes signées
+                  </p>
+                </div>
+                <button className="text-slate-400 hover:text-slate-900 transition-colors">
+                  <MoreHorizontal className="w-5 h-5" />
+                </button>
               </div>
-              <button className="text-slate-400 hover:text-slate-900 transition-colors">
-                <MoreHorizontal className="w-5 h-5" />
-              </button>
+
+              {/* Visualisation épurée */}
+              <div className="h-72 flex items-end gap-6 relative">
+                {/* Grille de fond très légère */}
+                <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="w-full h-px bg-slate-50"></div>
+                  ))}
+                </div>
+
+                {chartData.length > 0 ? (
+                  chartData.map((item, i) => (
+                    <div
+                      key={i}
+                      className="flex-1 flex flex-col justify-end gap-3 group h-full relative z-10"
+                    >
+                      <div
+                        className="w-full bg-slate-900 opacity-90 hover:opacity-100 transition-all duration-500 relative"
+                        style={{
+                          height: `${Math.max(item.heightPercent, 2)}%`,
+                        }}
+                      >
+                        {/* Valeur au survol */}
+                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-white text-slate-900 text-xs font-bold py-1 px-2 border border-slate-100 shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-300">
+                          {item.count}
+                        </div>
+                      </div>
+                      <div className="h-px w-full bg-slate-200"></div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider text-center">
+                        {item.year}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-slate-300 text-sm italic font-serif">
+                    Données indisponibles pour la période sélectionnée
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Visualisation épurée */}
-            <div className="h-72 flex items-end gap-6 relative">
-              {/* Grille de fond très légère */}
-              <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} className="w-full h-px bg-slate-50"></div>
-                ))}
-              </div>
+            {/* Graphique Chiffre d'Affaires */}
+            {revenueChartData.length > 0 && (
+              <div className="bg-white rounded-xl border border-slate-200 p-8 shadow-sm">
+                <div className="flex justify-between items-center mb-10">
+                  <div>
+                    <h3 className="text-lg font-serif font-medium text-slate-900">
+                      Chiffre d&apos;Affaires
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-1 uppercase tracking-wide font-bold">
+                      Évolution des revenus ({stats.chiffreAffaires.periode})
+                    </p>
+                  </div>
+                </div>
 
-              {chartData.length > 0 ? (
-                chartData.map((item, i) => (
-                  <div
-                    key={i}
-                    className="flex-1 flex flex-col justify-end gap-3 group h-full relative z-10"
-                  >
+                <div className="h-72 flex items-end gap-6 relative">
+                  <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
+                    {[...Array(5)].map((_, i) => (
+                      <div key={i} className="w-full h-px bg-slate-50"></div>
+                    ))}
+                  </div>
+
+                  {revenueChartData.map((item, i) => (
                     <div
-                      className="w-full bg-slate-900 opacity-90 hover:opacity-100 transition-all duration-500 relative"
-                      style={{ height: `${Math.max(item.heightPercent, 2)}%` }}
+                      key={i}
+                      className="flex-1 flex flex-col justify-end gap-3 group h-full relative z-10"
                     >
-                      {/* Valeur au survol */}
-                      <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-white text-slate-900 text-xs font-bold py-1 px-2 border border-slate-100 shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-300">
-                        {item.count}
+                      <div
+                        className="w-full bg-emerald-600 opacity-90 hover:opacity-100 transition-all duration-500 relative"
+                        style={{
+                          height: `${Math.max(item.heightPercent, 2)}%`,
+                        }}
+                      >
+                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-white text-slate-900 text-xs font-bold py-1 px-2 border border-slate-100 shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap">
+                          {(item.revenue / 1000).toFixed(1)}K FCFA
+                        </div>
+                      </div>
+                      <div className="h-px w-full bg-slate-200"></div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider text-center">
+                        {item.year}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Détails Chiffre d'Affaires par Type */}
+            {stats.chiffreAffaires.detailsParType.length > 0 && (
+              <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-4">
+                  Chiffre d&apos;Affaires par Type de Document
+                </h3>
+                <div className="space-y-3">
+                  {stats.chiffreAffaires.detailsParType.map((detail, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
+                    >
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-slate-900">
+                          {detail.documentType}
+                        </p>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          {detail.nombreDocuments} document
+                          {detail.nombreDocuments > 1 ? "s" : ""}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-bold text-emerald-700">
+                          {(detail.montantTotal / 1000).toFixed(1)}K FCFA
+                        </p>
                       </div>
                     </div>
-                    <div className="h-px w-full bg-slate-200"></div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider text-center">
-                      {item.year}
-                    </span>
-                  </div>
-                ))
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-slate-300 text-sm italic font-serif">
-                  Données indisponibles pour la période sélectionnée
+                  ))}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           {/* Panneau Latéral "Top Établissements" */}
@@ -293,11 +420,16 @@ export default function OverviewPageClient() {
                             {etab.etablissement.nom}
                           </span>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-xs text-slate-400 tabular-nums">
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="text-xs font-bold text-slate-900 tabular-nums">
                             {etab.demandesSignees}
                           </span>
-                          <div className="w-12 h-1 bg-slate-100 rounded-full overflow-hidden">
+                          {etab.chiffreAffaires > 0 && (
+                            <span className="text-[10px] text-emerald-600 font-medium tabular-nums">
+                              {(etab.chiffreAffaires / 1000).toFixed(1)}K FCFA
+                            </span>
+                          )}
+                          <div className="w-12 h-1 bg-slate-100 rounded-full overflow-hidden mt-1">
                             <div
                               className="h-full bg-slate-800"
                               style={{ width: `${percent}%` }}

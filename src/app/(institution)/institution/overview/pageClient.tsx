@@ -128,12 +128,7 @@ export default function OverviewPageClient() {
             icon: Clock,
             color: "amber",
           },
-          {
-            title: "Demandes approuvées",
-            value: overview?.demandesApprouvees || 0,
-            icon: CheckCircle2,
-            color: "emerald",
-          },
+
           {
             title: "Demandes rejetées",
             value: overview?.demandesRejetees || 0,
@@ -190,16 +185,6 @@ export default function OverviewPageClient() {
               Évolution mensuelle des demandes
             </h3>
             <MonthlyEvolutionChart data={stats.evolutionMensuelle} />
-          </div>
-        )}
-
-        {/* Statistiques par statut */}
-        {stats && stats.parStatut.length > 0 && (
-          <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-6">
-            <h3 className="font-serif font-bold text-slate-800 text-lg mb-4">
-              Répartition par statut
-            </h3>
-            <StatusChart data={stats.parStatut} />
           </div>
         )}
 
