@@ -151,17 +151,14 @@ export function useUniversities() {
       }
 
       // Mapper les données frontend vers le format backend
-      // Le backend attend des noms dans documentTypeNames
+      // Le backend attend des noms dans documentTypeNames et documentTypeParcoursNames
       let documentTypeNames: string[] = [];
       if (data.documentTypeNames) {
         // Si documentTypeNames est fourni directement (depuis le modal)
         documentTypeNames = data.documentTypeNames;
-      } else if (data.documentTypeParcours) {
-        // Si documentTypeParcours est fourni mais pas documentTypeNames
-        // documentTypeParcours contient des IDs comme clés
-        // Le backend devra convertir les IDs en noms
-        // Pour l'instant, on passe un tableau vide et le backend devra extraire depuis documentTypeParcours
-        documentTypeNames = [];
+      } else if (data.documentTypeParcoursNames) {
+        // Extraire les noms des types de documents depuis documentTypeParcoursNames
+        documentTypeNames = Object.keys(data.documentTypeParcoursNames);
       } else if (data.filieres) {
         // Fallback pour compatibilité avec l'ancien format
         documentTypeNames = data.filieres.flatMap(f => f.diplomas);
@@ -178,9 +175,9 @@ export function useUniversities() {
 
       if (data.address) createDto.adresse = data.address;
       
-      // Ajouter documentTypeParcours si fourni
-      if (data.documentTypeParcours) {
-        createDto.documentTypeParcours = data.documentTypeParcours;
+      // Ajouter documentTypeParcoursNames si fourni (NOUVELLE MÉTHODE RECOMMANDÉE)
+      if (data.documentTypeParcoursNames) {
+        createDto.documentTypeParcoursNames = data.documentTypeParcoursNames;
       }
 
       const newEtablissement = await governmentService.createEtablissement(createDto);
