@@ -42,6 +42,22 @@ export const API_ENDPOINTS = {
     GET: "/etablissement/profile",
     UPDATE: "/etablissement/profile",
     GET_STATS: "/etablissement/profile/stats",
+    GET_PARCOURS: "/etablissement/profile/parcours",
+    GET_PARCOURS_BY_DOCUMENT_TYPE: (documentTypeId: string) =>
+      `/etablissement/profile/document-types/${documentTypeId}/parcours`,
+  },
+  // Dashboard (Tableau de bord établissement)
+  DASHBOARD: {
+    OVERVIEW: "/etablissement/dashboard/overview",
+    STATS: "/etablissement/dashboard/stats",
+    REPORTS: "/etablissement/dashboard/reports",
+  },
+  // Dashboard Ministère (Tableau de bord gouvernement)
+  DASHBOARD_MINISTERE: {
+    STATS: "/ministere/dashboard/stats",
+    STATS_BY_PERIOD: "/ministere/dashboard/stats-by-period",
+    TOP_ETABLISSEMENTS: "/ministere/dashboard/top-etablissements",
+    REVENUE_SUMMARY: "/ministere/dashboard/revenue-summary",
   },
   // Ministère - Demandes
   MINISTERE: {
@@ -71,6 +87,7 @@ export const API_ENDPOINTS = {
       GET_BY_ID: (id: string) => `/ministere/etablissements/${id}`,
       CREATE: "/ministere/etablissements",
       UPDATE: (id: string) => `/ministere/etablissements/${id}`,
+      IMPORT: "/ministere/etablissements/import",
     },
     // Ministère - Parcours
     PARCOURS: {

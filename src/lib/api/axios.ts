@@ -87,15 +87,74 @@ class ApiClient {
       (error: AxiosError) => {
         if (error.response) {
           const statusCode = error.response.status;
-          const errorData = error.response.data as {
-            message?: string;
+          const rawData = error.response.data;
+          
+          // Parser errorData de manière plus robuste
+          let errorData: {
+            message?: string | string[];
             error?: string;
-          };
+            statusCode?: number;
+          } = {};
+          
+          if (rawData) {
+            if (typeof rawData === "string") {
+              // Si c'est une string, créer un objet avec le message
+              errorData = { message: rawData };
+            } else if (typeof rawData === "object" && rawData !== null) {
+              // Si c'est un objet, l'utiliser directement
+              errorData = rawData as {
+                message?: string | string[];
+                error?: string;
+                statusCode?: number;
+              };
+            }
+          }
+
+          // Log pour debug (uniquement en développement)
+          if (process.env.NODE_ENV === "development") {
+            console.error("[API Error]", {
+              status: statusCode,
+              url: error.config?.url,
+              baseURL: error.config?.baseURL,
+              method: error.config?.method,
+              params: error.config?.params,
+              requestData: error.config?.data,
+              responseData: rawData,
+              parsedErrorData: errorData,
+              headers: error.response.headers,
+            });
+          }
+
+          // Gérer les messages de validation qui peuvent être un tableau
+          let errorMessage: string;
+          if (errorData && typeof errorData === "object") {
+            if (Array.isArray(errorData.message)) {
+              errorMessage = errorData.message.join(", ");
+            } else if (errorData.message && typeof errorData.message === "string") {
+              errorMessage = errorData.message;
+            } else if (errorData.error && typeof errorData.error === "string") {
+              errorMessage = errorData.error;
+            } else if (error.message) {
+              errorMessage = error.message;
+            } else {
+              errorMessage = `Erreur serveur (${statusCode})`;
+            }
+          } else if (typeof errorData === "string") {
+            errorMessage = errorData;
+          } else if (error.message) {
+            errorMessage = error.message;
+          } else {
+            errorMessage = `Erreur serveur (${statusCode})`;
+          }
 
           throw new ApiClientError(
             statusCode,
-            errorData.message || error.message || MESSAGES.errors.generic,
-            errorData.error
+            errorMessage,
+            typeof errorData === "object" && errorData?.error 
+              ? errorData.error 
+              : typeof errorData === "object" && typeof errorData?.message === "string"
+              ? errorData.message
+              : undefined
           );
         }
 

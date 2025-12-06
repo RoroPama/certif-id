@@ -3,11 +3,13 @@
  */
 
 import { cookies } from "next/headers";
-import { documentsService } from "@/lib/services/documents.service";
-import { configService } from "@/lib/services/config.service";
+import {
+  documentsService,
+  type DocumentTypeEntity,
+} from "@/lib/services/documents.service";
 import NewRequestPageClient from "./pageClient";
 import ErrorState from "../components/ErrorState";
-import type { Filiere } from "../types";
+import type { DiplomeWithParcours } from "../types";
 
 export default async function NewRequestPage() {
   // Récupérer les cookies pour l'authentification
@@ -25,70 +27,53 @@ export default async function NewRequestPage() {
     );
   }
 
-  let documentTypes;
-  let filieres: Filiere[] = [];
+  let diplomes: DiplomeWithParcours[] = [];
   let errorState: { title: string; message: string } | null = null;
 
   try {
-    // Récupérer les types de documents autorisés pour cet établissement
-    documentTypes = await documentsService.getAuthorizedTypes(cookieHeader);
-
-    // Récupérer tous les parcours et diplômes configurés dans la plateforme
-    const [allParcours, allDiplomes] = await Promise.all([
-      configService.getAllParcours(cookieHeader),
-      configService.getAllDocumentTypes(cookieHeader),
-    ]);
-
-    // Filtrer les diplômes autorisés pour cet établissement
-    const authorizedDiplomeIds = new Set(documentTypes.map((dt) => dt.id));
-    const authorizedDiplomes = allDiplomes.filter((d) =>
-      authorizedDiplomeIds.has(d.id)
+    // Récupérer les types de documents autorisés pour l'établissement
+    const documentTypesData = await documentsService.getAuthorizedTypes(
+      cookieHeader
     );
 
-    // Grouper les diplômes autorisés par parcours
-    if (authorizedDiplomes.length > 0) {
-      // Créer un map des diplômes par parcours
-      const diplomesByParcours = new Map<string, typeof authorizedDiplomes>();
+    console.log("[NewRequestPage] Diplômes autorisés:", documentTypesData);
 
-      // Ajouter les diplômes avec parcours
-      authorizedDiplomes.forEach((diplome) => {
-        if (diplome.parcours && diplome.parcours.length > 0) {
-          diplome.parcours.forEach((parcoursItem) => {
-            if (!diplomesByParcours.has(parcoursItem.id)) {
-              diplomesByParcours.set(parcoursItem.id, []);
-            }
-            diplomesByParcours.get(parcoursItem.id)!.push(diplome);
-          });
+    // Pour chaque diplôme, récupérer les parcours associés
+    const diplomesWithParcours = await Promise.all(
+      documentTypesData.map(async (diplome) => {
+        try {
+          const parcours = await documentsService.getParcoursByDocumentType(
+            diplome.id,
+            cookieHeader
+          );
+          return {
+            id: diplome.id,
+            name: diplome.nom,
+            parcours: parcours.map((p) => ({
+              id: p.id,
+              name: p.nom,
+              duree: p.duree,
+            })),
+          };
+        } catch (error) {
+          // Si le diplôme n'a pas de parcours (ex: BEPC), retourner un tableau vide
+          console.log(
+            `[NewRequestPage] Aucun parcours pour le diplôme ${diplome.nom}`
+          );
+          return {
+            id: diplome.id,
+            name: diplome.nom,
+            parcours: [],
+          };
         }
-      });
+      })
+    );
 
-      // Créer les parcours avec leurs diplômes
-      filieres = allParcours
-        .filter((p) => diplomesByParcours.has(p.id))
-        .map((p) => ({
-          id: p.id,
-          name: p.nom,
-          diplomas: diplomesByParcours.get(p.id)!.map((d) => ({
-            id: d.id,
-            name: d.nom,
-          })),
-        }));
+    diplomes = diplomesWithParcours;
 
-      // Ajouter les diplômes sans parcours dans une catégorie "Autres"
-      const diplomesSansParcours = authorizedDiplomes.filter(
-        (d) => !d.parcours || d.parcours.length === 0
-      );
-      if (diplomesSansParcours.length > 0) {
-        filieres.push({
-          id: "autres",
-          name: "Autres diplômes",
-          diplomas: diplomesSansParcours.map((d) => ({
-            id: d.id,
-            name: d.nom,
-          })),
-        });
-      }
-    } else {
+    console.log("[NewRequestPage] Diplômes avec parcours:", diplomes);
+
+    if (diplomes.length === 0) {
       // Si aucun type de document n'est disponible
       errorState = {
         title: "Aucun type de document disponible",
@@ -119,7 +104,7 @@ export default async function NewRequestPage() {
   }
 
   return (
-    <NewRequestPageClient initialFilieres={filieres} foundationYear={2010} />
+    <NewRequestPageClient initialDiplomes={diplomes} foundationYear={2010} />
   );
 }
 

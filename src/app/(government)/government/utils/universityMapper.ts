@@ -69,8 +69,12 @@ function createFilieresFromDocumentTypes(
 export function mapEtablissementToUniversity(
   etablissement: EtablissementEntity
 ): University {
-  // Compter le nombre de diplômes délivrés (basé sur les demandes traitées)
-  const diplomaCount = etablissement._count?.demandes || 0;
+  // Compter le nombre de diplômes délivrés (documents signés)
+  // Utiliser documentsSignes si disponible, sinon fallback sur demandes
+  const diplomaCount =
+    etablissement._count?.documentsSignes ??
+    etablissement._count?.demandes ??
+    0;
 
   // Extraire la ville depuis l'adresse
   const city = extractCity(etablissement.adresse);

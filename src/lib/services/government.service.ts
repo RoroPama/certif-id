@@ -344,6 +344,28 @@ export class GovernmentService {
       }
     );
   }
+
+  /**
+   * Importer des établissements en masse depuis un fichier Excel/CSV
+   */
+  async importEtablissements(
+    file: File,
+    cookieHeader?: string
+  ): Promise<ImportEtablissementsResult> {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    return apiClient.post<ImportEtablissementsResult>(
+      API_ENDPOINTS.MINISTERE.ETABLISSEMENTS.IMPORT,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          ...(cookieHeader ? { cookie: cookieHeader } : {}),
+        },
+      }
+    );
+  }
 }
 
 // Type pour les documents signés du ministère
@@ -362,11 +384,32 @@ export interface DocumentSigneEntity {
     dateEmission: Date | string;
     emetteur: string;
   };
+  parcours?: {
+    id: string;
+    nom: string;
+    duree: string;
+  } | null;
   createdAt: Date | string;
   updatedAt: Date | string;
 }
 
 // Type pour les établissements
+export interface EtablissementDocumentTypeParcoursRelation {
+  id: string;
+  etablissementId: string;
+  documentTypeId: string;
+  parcoursId: string;
+  documentType: {
+    id: string;
+    nom: string;
+  };
+  parcours: {
+    id: string;
+    nom: string;
+    duree: string;
+  };
+}
+
 export interface EtablissementEntity {
   id: string;
   nom: string;
@@ -381,6 +424,7 @@ export interface EtablissementEntity {
     users: number;
     demandes: number;
     documentsAutorises: number;
+    documentsSignes?: number;
   };
   documentsAutorises?: {
     id: string;
@@ -409,6 +453,51 @@ export interface EtablissementEntity {
       updatedAt: Date | string;
     };
   }[];
+  documentTypeParcours?: EtablissementDocumentTypeParcoursRelation[];
+  // Alias pour compatibilité
+  etablissementDocumentTypeParcours?: EtablissementDocumentTypeParcoursRelation[];
+}
+
+// Types pour l'import d'établissements
+export interface ImportEtablissementRow {
+  nom: string;
+  numeroDecret: string;
+  type: string;
+  adresse?: string;
+  telephone: string;
+  email: string;
+  documentTypeNames?: string;
+  parcoursNames?: string;
+}
+
+export interface ImportEtablissementsResult {
+  totalRows: number;
+  successCount: number;
+  errorCount: number;
+  successes: Array<{
+    rowNumber: number;
+    etablissement: {
+      id: string;
+      nom: string;
+      numeroDecret: string;
+      email: string;
+    };
+    user: {
+      email: string;
+      temporaryPassword: string;
+      emailSent: boolean;
+    };
+  }>;
+  errors: Array<{
+    rowNumber: number;
+    data: ImportEtablissementRow;
+    errors: string[];
+  }>;
+  duplicates: Array<{
+    rowNumber: number;
+    data: ImportEtablissementRow;
+    reason: string;
+  }>;
 }
 
 // DTOs pour les établissements
@@ -420,6 +509,9 @@ export interface CreateEtablissementDto {
   telephone: string;
   email: string;
   documentTypeNames: string[];
+  documentTypeParcours?: {
+    [documentTypeId: string]: string[]; // Array de parcoursIds
+  };
 }
 
 export interface UpdateEtablissementDto {
@@ -430,7 +522,9 @@ export interface UpdateEtablissementDto {
   telephone?: string;
   email?: string;
   documentTypeNames?: string[];
-  parcoursNames?: string[];
+  documentTypeParcours?: {
+    [documentTypeId: string]: string[]; // Array de parcoursIds
+  };
 }
 
 // Export d'une instance singleton

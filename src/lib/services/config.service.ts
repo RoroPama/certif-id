@@ -38,6 +38,54 @@ export interface DocumentTypeEntity {
   updatedAt: Date | string;
 }
 
+// Type pour le profil de l'établissement
+export interface EtablissementProfile {
+  id: string;
+  nom: string;
+  numeroDecret: string;
+  type: string;
+  adresse?: string;
+  telephone?: string;
+  email?: string;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  parcours?: {
+    id: string;
+    etablissementId: string;
+    parcoursId: string;
+    createdAt: Date | string;
+    parcours: {
+      id: string;
+      nom: string;
+      duree: string;
+      createdAt: Date | string;
+      updatedAt: Date | string;
+    };
+  }[];
+  documentsAutorises?: {
+    id: string;
+    etablissementId: string;
+    documentTypeId: string;
+    createdAt: Date | string;
+    documentType: {
+      id: string;
+      nom: string;
+      description: string | null;
+      prix: number;
+      createdAt: Date | string;
+      updatedAt: Date | string;
+    };
+  }[];
+}
+
+// DTO pour la mise à jour du profil
+export interface UpdateProfileDto {
+  nom?: string;
+  adresse?: string;
+  telephone?: string;
+  email?: string;
+}
+
 // DTOs pour la création
 export interface CreateParcoursDto {
   nom: string;
@@ -79,7 +127,7 @@ export class ConfigService {
           headers: cookieHeader ? { cookie: cookieHeader } : undefined,
         }
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("[ConfigService] Erreur getAllParcours:", error);
       throw error;
     }
@@ -155,7 +203,7 @@ export class ConfigService {
           headers: cookieHeader ? { cookie: cookieHeader } : undefined,
         }
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("[ConfigService] Erreur getAllDocumentTypes:", error);
       throw error;
     }
@@ -200,7 +248,7 @@ export class ConfigService {
     data: UpdateDocumentTypeDto,
     cookieHeader?: string
   ): Promise<DocumentTypeEntity> {
-    return apiClient.put<DocumentTypeEntity>(
+    return apiClient.patch<DocumentTypeEntity>(
       API_ENDPOINTS.MINISTERE.DOCUMENT_TYPES.UPDATE(id),
       data,
       {
@@ -219,6 +267,44 @@ export class ConfigService {
         headers: cookieHeader ? { cookie: cookieHeader } : undefined,
       }
     );
+  }
+
+  /**
+   * Récupérer le profil de l'établissement
+   */
+  async getProfile(cookieHeader?: string): Promise<EtablissementProfile> {
+    try {
+      return await apiClient.get<EtablissementProfile>(
+        API_ENDPOINTS.PROFILE.GET,
+        {
+          headers: cookieHeader ? { cookie: cookieHeader } : undefined,
+        }
+      );
+    } catch (error: unknown) {
+      console.error("[ConfigService] Erreur getProfile:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Mettre à jour le profil de l'établissement
+   */
+  async updateProfile(
+    data: UpdateProfileDto,
+    cookieHeader?: string
+  ): Promise<EtablissementProfile> {
+    try {
+      return await apiClient.put<EtablissementProfile>(
+        API_ENDPOINTS.PROFILE.UPDATE,
+        data,
+        {
+          headers: cookieHeader ? { cookie: cookieHeader } : undefined,
+        }
+      );
+    } catch (error: unknown) {
+      console.error("[ConfigService] Erreur updateProfile:", error);
+      throw error;
+    }
   }
 }
 

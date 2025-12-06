@@ -67,7 +67,7 @@ export interface RegistryEntry {
   studentName: string;
   universityName: string;
   diplomaTitle: string;
-  filiere: string;
+  parcours: string;
   mention: string;
   promotion: string;
   issueDate: string;
@@ -98,5 +98,9 @@ export interface UniversityFormData {
   address?: string;
   description?: string;
   filieres?: Filiere[];
+  documentTypeParcours?: {
+    [documentTypeId: string]: string[]; // parcoursIds
+  };
+  documentTypeNames?: string[]; // Noms des diplômes (pour compatibilité backend)
 }
 

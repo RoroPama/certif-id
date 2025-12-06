@@ -5,16 +5,16 @@
 import { useState, useMemo } from "react";
 import { requestsService } from "@/lib/services/requests.service";
 import { uploadService } from "@/lib/services/upload.service";
-import type { StudentDraft, Filiere, AcademicYear } from "../types";
+import type { StudentDraft, DiplomeWithParcours, AcademicYear } from "../types";
 import type { DemandeEntity } from "@/lib/services/requests.service";
 
 interface UseNewRequestProps {
-  filieres: Filiere[];
+  diplomes: DiplomeWithParcours[];
   foundationYear: number;
   onSubmitSuccess: () => void;
 }
 
-export function useNewRequest({ filieres, foundationYear, onSubmitSuccess }: UseNewRequestProps) {
+export function useNewRequest({ diplomes, foundationYear, onSubmitSuccess }: UseNewRequestProps) {
   const [draftList, setDraftList] = useState<StudentDraft[]>([]);
   const [currentEntry, setCurrentEntry] = useState<Partial<StudentDraft>>({
     sex: "M",
@@ -42,7 +42,6 @@ export function useNewRequest({ filieres, foundationYear, onSubmitSuccess }: Use
     if (
       !currentEntry.firstName ||
       !currentEntry.lastName ||
-      !currentEntry.filiereId ||
       !currentEntry.diplomaId ||
       !currentEntry.yearId ||
       !currentEntry.pdfFile
@@ -50,9 +49,13 @@ export function useNewRequest({ filieres, foundationYear, onSubmitSuccess }: Use
       alert("Veuillez remplir tous les champs obligatoires, y compris le fichier PDF.");
       return;
     }
-    
-    const filiere = filieres.find((f) => f.id === currentEntry.filiereId);
-    const diploma = filiere?.diplomas.find((d) => d.id === currentEntry.diplomaId);
+
+    // Vérifier que si le diplôme a des parcours, un parcours doit être sélectionné
+    const selectedDiplome = diplomes.find((d) => d.id === currentEntry.diplomaId);
+    if (selectedDiplome && selectedDiplome.parcours.length > 0 && !currentEntry.parcoursId) {
+      alert("Veuillez sélectionner un parcours pour ce diplôme.");
+      return;
+    }
     
     const newDraft: StudentDraft = {
       id: Math.random().toString(36).substr(2, 9),
@@ -60,9 +63,9 @@ export function useNewRequest({ filieres, foundationYear, onSubmitSuccess }: Use
       lastName: currentEntry.lastName!,
       sex: currentEntry.sex as "M" | "F",
       yearId: currentEntry.yearId!,
-      filiereId: currentEntry.filiereId!,
+      parcoursId: currentEntry.parcoursId, // Optionnel
       diplomaId: currentEntry.diplomaId!,
-      diplomaName: diploma ? diploma.name : "",
+      diplomaName: selectedDiplome ? selectedDiplome.name : "",
       mention: currentEntry.mention || "Passable",
       pdfFile: currentEntry.pdfFile || null,
       fileName: currentEntry.fileName || "",
@@ -117,6 +120,12 @@ export function useNewRequest({ filieres, foundationYear, onSubmitSuccess }: Use
         }
 
         // 3. Retourner les données du document
+        // Inclure parcoursId seulement si c'est un UUID valide (pas "autres")
+        const parcoursId = draft.parcoursId && 
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(draft.parcoursId)
+          ? draft.parcoursId
+          : undefined;
+
         return {
           documentTypeId,
           nomBeneficiaire: draft.firstName,
@@ -124,6 +133,7 @@ export function useNewRequest({ filieres, foundationYear, onSubmitSuccess }: Use
           dateEmission: new Date().toISOString().split("T")[0], // Date d'aujourd'hui
           pdfOriginalUrl: pdfUrl,
           matricule: draft.yearId, // Utiliser l'année comme matricule temporaire
+          ...(parcoursId && { parcoursId }), // Inclure parcoursId seulement s'il est valide
         };
       });
 
@@ -155,7 +165,6 @@ export function useNewRequest({ filieres, foundationYear, onSubmitSuccess }: Use
     draftList,
     currentEntry,
     years,
-    filieres,
     isSubmitting,
     error,
     setCurrentEntry,

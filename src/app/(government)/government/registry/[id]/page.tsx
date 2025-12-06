@@ -18,6 +18,7 @@ export default async function RegistryDetailPage({ params }: PageProps) {
   const { id } = await params;
 
   let entry;
+  let pdfSigneUrl: string;
   try {
     // Récupérer les cookies pour l'authentification
     const cookieStore = await cookies();
@@ -35,10 +36,16 @@ export default async function RegistryDetailPage({ params }: PageProps) {
     }
 
     // Récupérer le document signé par son ID
-    const document = await governmentService.getSignedDocumentById(id, cookieHeader);
+    const document = await governmentService.getSignedDocumentById(
+      id,
+      cookieHeader
+    );
 
     // Transformer le document en format RegistryEntry
     entry = mapDocumentToRegistryEntry(document);
+
+    // Récupérer l'URL du PDF signé depuis le document
+    pdfSigneUrl = document.pdfSigneUrl;
   } catch (error) {
     // Si le document n'existe pas (404), afficher 404
     if (error instanceof ApiClientError && error.statusCode === 404) {
@@ -56,6 +63,12 @@ export default async function RegistryDetailPage({ params }: PageProps) {
     );
   }
 
-  return <RegistryDetailPageClient entry={entry} />;
+  return (
+    <RegistryDetailPageClient
+      entry={entry}
+      pdfSigneUrl={pdfSigneUrl}
+      pdfOriginalUrl={null}
+    />
+  );
 }
 

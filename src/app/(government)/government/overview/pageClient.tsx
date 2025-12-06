@@ -1,249 +1,460 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import {
-  Award,
-  Building2,
-  Users,
-  AlertTriangle,
-  ChevronRight,
-  SlidersHorizontal,
-  RotateCcw,
-  GraduationCap,
+  AlertCircle,
+  ArrowUpRight,
+  Download,
+  Calendar,
+  MoreHorizontal,
 } from "lucide-react";
-import { StatCard, SearchableSelect } from "@/components/shared";
 import { GOVERNMENT_ROUTES } from "@/lib/utils/constants";
-import { MESSAGES } from "@/lib/utils/messages";
-import { useOverview } from "../hooks";
+import { useGovernmentDashboard } from "../hooks";
+
+// Carte KPI "Haute Couture" : Minimaliste, Serif pour les chiffres
+const SophisticatedMetric = ({
+  label,
+  value,
+  trend,
+  trendDirection = "neutral",
+}: {
+  label: string;
+  value: string | number;
+  trend?: string;
+  trendDirection?: "positive" | "negative" | "neutral";
+}) => (
+  <div className="group bg-white p-6 rounded-none border-r border-b border-slate-100 first:rounded-tl-2xl last:rounded-br-2xl hover:bg-slate-50/50 transition-colors relative">
+    <div className="flex justify-between items-start mb-4">
+      <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 group-hover:text-slate-600 transition-colors">
+        {label}
+      </p>
+      {trend && (
+        <span
+          className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${
+            trendDirection === "positive"
+              ? "bg-emerald-50 text-emerald-700 border-emerald-100"
+              : trendDirection === "negative"
+              ? "bg-rose-50 text-rose-700 border-rose-100"
+              : "bg-slate-50 text-slate-600 border-slate-100"
+          }`}
+        >
+          {trend}
+        </span>
+      )}
+    </div>
+    <div className="flex items-baseline gap-1">
+      <h3 className="text-4xl font-serif text-slate-900 tracking-tight">
+        {value}
+      </h3>
+    </div>
+  </div>
+);
 
 export default function OverviewPageClient() {
-  const {
-    stats,
-    filters,
-    universities,
-    years,
-    filieres,
-    handleFilterChange,
-    resetFilters,
-  } = useOverview();
-  const { government } = MESSAGES;
+  const [dateFilter, setDateFilter] = useState<{
+    startDate?: string;
+    endDate?: string;
+    etablissementId?: string;
+    documentTypeId?: string;
+  }>({});
 
-  const universityOptions = universities.map((u) => ({
-    value: u.id,
-    label: u.name,
-  }));
+  const { stats, topEtablissements, revenueSummary, loading, error, refetch } =
+    useGovernmentDashboard({
+      filters: dateFilter,
+    });
 
-  const yearOptions = years.map((y) => ({ value: y, label: y }));
-  const filiereOptions = filieres.map((f) => ({ value: f.id, label: f.name }));
+  // Calculer les métriques depuis les données backend
+  const totalDiplomas = stats?.demandes.signee || 0;
+  const activeUniversities = stats?.etablissements.actifs || 0;
+  const pendingRequests = stats?.demandes.enAttente || 0;
+  const rejectedDemandes = stats?.demandes.rejetee || 0;
+
+  // Mapper l'évolution pour le graphique (demandes signées)
+  const chartData =
+    stats?.evolution.map((item) => {
+      const maxDemandes = Math.max(
+        ...(stats.evolution.map((e) => e.demandesSignees) || [1])
+      );
+      return {
+        year: item.periode,
+        count: item.demandesSignees,
+        heightPercent:
+          maxDemandes > 0 ? (item.demandesSignees / maxDemandes) * 100 : 5,
+      };
+    }) || [];
+
+  // Mapper l'évolution du chiffre d'affaires pour un second graphique
+  const revenueChartData =
+    stats?.evolution.map((item) => {
+      const maxRevenue = Math.max(
+        ...(stats.evolution.map((e) => e.chiffreAffaires) || [1])
+      );
+      return {
+        year: item.periode,
+        revenue: item.chiffreAffaires,
+        heightPercent:
+          maxRevenue > 0 ? (item.chiffreAffaires / maxRevenue) * 100 : 5,
+      };
+    }) || [];
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-        <StatCard
-          title={government.stats.certifiedDiplomas}
-          value={stats.totalDiplomas.toLocaleString()}
-          trend={`${stats.publicCount} Public / ${stats.privateCount} Privé`}
-          color="blue"
-          icon={Award}
-          showTrendIcon={false}
-        />
-        <StatCard
-          title={government.stats.activeUniversities}
-          value={stats.activeUniversities}
-          trend={`${stats.publicCount} Publics`}
-          color="emerald"
-          icon={Building2}
-          showTrendIcon={false}
-        />
-        <StatCard
-          title={government.stats.pendingStudents}
-          value={stats.pendingRequests}
-          trend={MESSAGES.status.inProgress}
-          color="amber"
-          icon={Users}
-        />
-        <StatCard
-          title={government.stats.rejectionRate}
-          value={stats.rejectionRate}
-          trend={MESSAGES.common.rejections}
-          color="rose"
-          icon={AlertTriangle}
-        />
+    <div className="space-y-10 animate-in fade-in duration-700 pb-12">
+      {/* Header Contextuel */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 border-b border-slate-100 pb-6">
+        <div>
+          <h2 className="text-3xl font-serif font-medium text-slate-900">
+            Tableau de Bord
+          </h2>
+          <p className="text-slate-500 mt-2 text-sm max-w-lg leading-relaxed">
+            Surveillance en temps réel des accréditations académiques et de la
+            conformité nationale.
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-wide hover:border-slate-300 hover:text-slate-900 transition-all rounded-sm shadow-sm">
+            <Calendar className="w-3.5 h-3.5" /> Période : 2024
+          </button>
+          <button className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 text-white text-xs font-bold uppercase tracking-wide hover:bg-slate-800 transition-all rounded-sm shadow-lg shadow-slate-900/10">
+            <Download className="w-3.5 h-3.5" /> Exporter Données
+          </button>
+        </div>
       </div>
 
-      {/* Main Content */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* Charts Section */}
-        <div className="xl:col-span-2 space-y-6">
-          {/* Activity Chart */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-            <div className="flex justify-between items-start mb-6">
-              <div>
-                <h3 className="font-serif font-bold text-lg text-slate-900">
-                  {government.pages.overview.charts.activityTitle}
-                </h3>
-                <p className="text-sm text-slate-500 mt-1">
-                  {government.pages.overview.charts.activityDescription}
-                </p>
+      {/* État de chargement */}
+      {loading && (
+        <div className="py-20 text-center">
+          <div className="inline-block w-6 h-6 border-2 border-slate-200 border-t-slate-800 rounded-full animate-spin mb-4"></div>
+          <p className="text-sm text-slate-500 font-medium">
+            Chargement des statistiques...
+          </p>
+        </div>
+      )}
+
+      {/* État d'erreur */}
+      {error && !loading && (
+        <div className="bg-rose-50 border border-rose-100 rounded-lg p-4 flex items-center gap-3 text-rose-800 text-sm">
+          <AlertCircle className="w-5 h-5 flex-shrink-0" />
+          <div className="flex-1">
+            <p className="font-medium">Erreur de chargement</p>
+            <p className="text-xs mt-1">{error}</p>
+          </div>
+          <button
+            onClick={() => refetch()}
+            className="px-3 py-1.5 bg-rose-100 hover:bg-rose-200 text-rose-800 text-xs font-medium rounded transition-colors"
+          >
+            Réessayer
+          </button>
+        </div>
+      )}
+
+      {/* Grille de Métriques "Fusionnée" */}
+      {!loading && stats && (
+        <>
+          {/* Première ligne de métriques */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-slate-100">
+              <SophisticatedMetric
+                label="Diplômes Certifiés"
+                value={totalDiplomas.toLocaleString()}
+                trend={
+                  stats.demandes.total > 0
+                    ? `+${(
+                        (stats.demandes.signee / stats.demandes.total) *
+                        100
+                      ).toFixed(1)}%`
+                    : "0%"
+                }
+                trendDirection="positive"
+              />
+              <SophisticatedMetric
+                label="Universités Actives"
+                value={activeUniversities}
+                trend={
+                  stats.etablissements.total > 0
+                    ? `${(
+                        (activeUniversities / stats.etablissements.total) *
+                        100
+                      ).toFixed(0)}%`
+                    : "0%"
+                }
+              />
+              <SophisticatedMetric
+                label="Dossiers en attente"
+                value={pendingRequests}
+                trend={
+                  stats.demandes.total > 0
+                    ? `${(
+                        (pendingRequests / stats.demandes.total) *
+                        100
+                      ).toFixed(1)}%`
+                    : "0%"
+                }
+                trendDirection="neutral"
+              />
+            </div>
+          </div>
+
+          {/* Deuxième ligne de métriques */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-slate-100">
+              <SophisticatedMetric
+                label="Total Demandes"
+                value={stats.demandes.total.toLocaleString()}
+                trend={`${stats.etablissements.total} établissements`}
+              />
+              <SophisticatedMetric
+                label="Demandes Rejetées"
+                value={rejectedDemandes.toLocaleString()}
+                trend={
+                  stats.demandes.total > 0
+                    ? `${(
+                        (rejectedDemandes / stats.demandes.total) *
+                        100
+                      ).toFixed(1)}%`
+                    : "0%"
+                }
+                trendDirection="negative"
+              />
+              <SophisticatedMetric
+                label="Demandes Approuvées"
+                value={stats.demandes.approuvees.toLocaleString()}
+                trend={
+                  stats.demandes.total > 0
+                    ? `${(
+                        (stats.demandes.approuvees / stats.demandes.total) *
+                        100
+                      ).toFixed(1)}%`
+                    : "0%"
+                }
+                trendDirection="positive"
+              />
+              <SophisticatedMetric
+                label="Chiffre d'Affaires"
+                value={`${(stats.chiffreAffaires.total / 1000).toFixed(
+                  1
+                )}K FCFA`}
+                trend={stats.chiffreAffaires.periode}
+              />
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Section Principale : Graphiques & Listes */}
+      {!loading && stats && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Graphiques "Analytiques" */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Graphique Demandes Signées */}
+            <div className="bg-white rounded-xl border border-slate-200 p-8 shadow-sm">
+              <div className="flex justify-between items-center mb-10">
+                <div>
+                  <h3 className="text-lg font-serif font-medium text-slate-900">
+                    Volume d&apos;Émission
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1 uppercase tracking-wide font-bold">
+                    Évolution des demandes signées
+                  </p>
+                </div>
+                <button className="text-slate-400 hover:text-slate-900 transition-colors">
+                  <MoreHorizontal className="w-5 h-5" />
+                </button>
               </div>
+
+              {/* Visualisation épurée */}
+              <div className="h-72 flex items-end gap-6 relative">
+                {/* Grille de fond très légère */}
+                <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="w-full h-px bg-slate-50"></div>
+                  ))}
+                </div>
+
+                {chartData.length > 0 ? (
+                  chartData.map((item, i) => (
+                    <div
+                      key={i}
+                      className="flex-1 flex flex-col justify-end gap-3 group h-full relative z-10"
+                    >
+                      <div
+                        className="w-full bg-slate-900 opacity-90 hover:opacity-100 transition-all duration-500 relative"
+                        style={{
+                          height: `${Math.max(item.heightPercent, 2)}%`,
+                        }}
+                      >
+                        {/* Valeur au survol */}
+                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-white text-slate-900 text-xs font-bold py-1 px-2 border border-slate-100 shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-300">
+                          {item.count}
+                        </div>
+                      </div>
+                      <div className="h-px w-full bg-slate-200"></div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider text-center">
+                        {item.year}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-slate-300 text-sm italic font-serif">
+                    Données indisponibles pour la période sélectionnée
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Graphique Chiffre d'Affaires */}
+            {revenueChartData.length > 0 && (
+              <div className="bg-white rounded-xl border border-slate-200 p-8 shadow-sm">
+                <div className="flex justify-between items-center mb-10">
+                  <div>
+                    <h3 className="text-lg font-serif font-medium text-slate-900">
+                      Chiffre d&apos;Affaires
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-1 uppercase tracking-wide font-bold">
+                      Évolution des revenus ({stats.chiffreAffaires.periode})
+                    </p>
+                  </div>
+                </div>
+
+                <div className="h-72 flex items-end gap-6 relative">
+                  <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
+                    {[...Array(5)].map((_, i) => (
+                      <div key={i} className="w-full h-px bg-slate-50"></div>
+                    ))}
+                  </div>
+
+                  {revenueChartData.map((item, i) => (
+                    <div
+                      key={i}
+                      className="flex-1 flex flex-col justify-end gap-3 group h-full relative z-10"
+                    >
+                      <div
+                        className="w-full bg-emerald-600 opacity-90 hover:opacity-100 transition-all duration-500 relative"
+                        style={{
+                          height: `${Math.max(item.heightPercent, 2)}%`,
+                        }}
+                      >
+                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-white text-slate-900 text-xs font-bold py-1 px-2 border border-slate-100 shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap">
+                          {(item.revenue / 1000).toFixed(1)}K FCFA
+                        </div>
+                      </div>
+                      <div className="h-px w-full bg-slate-200"></div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider text-center">
+                        {item.year}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Détails Chiffre d'Affaires par Type */}
+            {stats.chiffreAffaires.detailsParType.length > 0 && (
+              <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-4">
+                  Chiffre d&apos;Affaires par Type de Document
+                </h3>
+                <div className="space-y-3">
+                  {stats.chiffreAffaires.detailsParType.map((detail, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
+                    >
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-slate-900">
+                          {detail.documentType}
+                        </p>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          {detail.nombreDocuments} document
+                          {detail.nombreDocuments > 1 ? "s" : ""}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-bold text-emerald-700">
+                          {(detail.montantTotal / 1000).toFixed(1)}K FCFA
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Panneau Latéral "Top Établissements" */}
+          <div className="bg-white rounded-xl border border-slate-200 flex flex-col shadow-sm">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/30">
+              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
+                Top Établissements
+              </h3>
               <Link
-                href={GOVERNMENT_ROUTES.REGISTRY}
-                className="text-sm text-emerald-700 font-medium hover:underline flex items-center gap-1"
+                href={GOVERNMENT_ROUTES.UNIVERSITIES}
+                className="text-xs text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1 transition-colors"
               >
-                {MESSAGES.common.viewAll || "Tout voir"}{" "}
-                <ChevronRight className="w-3 h-3" />
+                Détails <ArrowUpRight className="w-3 h-3" />
               </Link>
             </div>
 
-            {stats.chartData.length > 0 ? (
-              <div className="flex items-end justify-around h-64 px-4">
-                {stats.chartData.map((item, i) => (
-                  <div key={i} className="flex flex-col items-center gap-2">
-                    <div
-                      className="w-16 bg-gradient-to-t from-emerald-600 to-emerald-400 rounded-t-lg transition-all hover:from-emerald-500 hover:to-emerald-300 relative group cursor-default shadow-lg"
-                      style={{ height: `${item.heightPercent}%` }}
-                    >
-                      <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                        {item.count} {government.pages.overview.charts.diplomas}
-                      </div>
-                    </div>
-                    <span className="text-xs font-bold text-slate-600">
-                      {item.year}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-64 text-slate-400">
-                <GraduationCap className="w-12 h-12 opacity-30 mb-2" />
-                <p className="text-sm">{government.pages.overview.charts.noData}</p>
-              </div>
-            )}
-          </div>
-
-          {/* Top Filieres */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-            <h3 className="font-serif font-bold text-lg text-slate-900 mb-6">
-              {government.pages.overview.charts.topFilieresTitle}
-            </h3>
-            {stats.topFilieres.length > 0 ? (
-              <div className="space-y-4">
-                {stats.topFilieres.map((filiere, i) => (
-                  <div key={i} className="flex items-center gap-4">
-                    <span className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 font-bold text-sm flex items-center justify-center">
-                      {i + 1}
-                    </span>
-                    <div className="flex-1">
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-sm font-medium text-slate-800">
-                          {filiere.name}
-                        </span>
-                        <span className="text-xs text-slate-500">
-                          {filiere.count} ({filiere.percent}%)
-                        </span>
-                      </div>
-                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-500"
-                          style={{ width: `${filiere.percent}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-32 text-slate-400">
-                <p className="text-sm">{government.pages.overview.charts.noData}</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Filters Sidebar */}
-        <div className="xl:col-span-1">
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 sticky top-28">
-            <div className="flex items-center gap-2 mb-6">
-              <SlidersHorizontal className="w-5 h-5 text-emerald-600" />
-              <h3 className="font-serif font-bold text-lg text-slate-900">
-                {government.pages.overview.filtersTitle}
-              </h3>
+            <div className="flex-1 overflow-y-auto p-2">
+              {topEtablissements.length > 0 ? (
+                <div className="space-y-1">
+                  {topEtablissements.map((etab, i) => {
+                    const maxDemandes = Math.max(
+                      ...topEtablissements.map((e) => e.demandesSignees),
+                      1
+                    );
+                    const percent = (etab.demandesSignees / maxDemandes) * 100;
+                    return (
+                      <Link
+                        key={etab.etablissement.id}
+                        href={GOVERNMENT_ROUTES.UNIVERSITY_DETAIL(
+                          etab.etablissement.id
+                        )}
+                        className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-lg transition-colors group cursor-pointer"
+                      >
+                        <div className="flex items-center gap-3 overflow-hidden">
+                          <span className="flex-shrink-0 w-6 h-6 rounded bg-slate-100 text-slate-500 text-[10px] font-bold flex items-center justify-center">
+                            {i + 1}
+                          </span>
+                          <span className="text-sm text-slate-600 font-medium truncate group-hover:text-slate-900 transition-colors">
+                            {etab.etablissement.nom}
+                          </span>
+                        </div>
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="text-xs font-bold text-slate-900 tabular-nums">
+                            {etab.demandesSignees}
+                          </span>
+                          {etab.chiffreAffaires > 0 && (
+                            <span className="text-[10px] text-emerald-600 font-medium tabular-nums">
+                              {(etab.chiffreAffaires / 1000).toFixed(1)}K FCFA
+                            </span>
+                          )}
+                          <div className="w-12 h-1 bg-slate-100 rounded-full overflow-hidden mt-1">
+                            <div
+                              className="h-full bg-slate-800"
+                              style={{ width: `${percent}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="flex-1 flex items-center justify-center text-slate-400 text-xs p-8">
+                  Aucune donnée
+                </div>
+              )}
             </div>
-            <p className="text-sm text-slate-500 mb-6">
-              {government.pages.overview.filtersDescription}
-            </p>
 
-            <div className="space-y-4">
-              <div>
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">
-                  {government.pages.universities.title}
-                </label>
-                <SearchableSelect
-                  options={universityOptions}
-                  value={filters.universityId}
-                  onChange={(val) => handleFilterChange("universityId", val)}
-                  placeholder={government.pages.overview.placeholders.allUniversities}
-                  icon={Building2}
-                  allOptionLabel={government.pages.overview.placeholders.allUniversities}
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">
-                  Type
-                </label>
-                <SearchableSelect
-                  options={[
-                    { value: "PUBLIC", label: government.pages.universities.filters.public },
-                    { value: "PRIVE", label: government.pages.universities.filters.private },
-                  ]}
-                  value={filters.type}
-                  onChange={(val) => handleFilterChange("type", val)}
-                  placeholder={government.pages.overview.placeholders.allTypes}
-                  allOptionLabel={government.pages.overview.placeholders.allTypes}
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">
-                  Année
-                </label>
-                <SearchableSelect
-                  options={yearOptions}
-                  value={filters.year}
-                  onChange={(val) => handleFilterChange("year", val)}
-                  placeholder={government.pages.overview.placeholders.allYears}
-                  allOptionLabel={government.pages.overview.placeholders.allYears}
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">
-                  Filière
-                </label>
-                <SearchableSelect
-                  options={filiereOptions}
-                  value={filters.filiereId}
-                  onChange={(val) => handleFilterChange("filiereId", val)}
-                  placeholder={government.pages.overview.placeholders.allFilieres}
-                  allOptionLabel={government.pages.overview.placeholders.allFilieres}
-                />
-              </div>
-
-              <button
-                onClick={resetFilters}
-                className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-3 border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all"
-              >
-                <RotateCcw className="w-4 h-4" />
-                {government.pages.overview.resetFilters}
+            <div className="p-4 border-t border-slate-100 bg-slate-50/30 rounded-b-xl">
+              <button className="w-full py-2 text-xs font-bold text-slate-500 hover:text-slate-800 uppercase tracking-widest transition-colors">
+                Voir le rapport complet
               </button>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
-
