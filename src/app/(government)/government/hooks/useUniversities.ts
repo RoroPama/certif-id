@@ -2,8 +2,16 @@
 
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { governmentService } from "@/lib/services/government.service";
-import { mapEtablissementToUniversity, mapEtablissementsToUniversities } from "../utils/universityMapper";
-import type { University, Filiere, UniversityFormData, UniversityStatus } from "../types";
+import {
+  mapEtablissementToUniversity,
+  mapEtablissementsToUniversities,
+} from "../utils/universityMapper";
+import type {
+  University,
+  Filiere,
+  UniversityFormData,
+  UniversityStatus,
+} from "../types";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -11,7 +19,9 @@ export function useUniversities() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const [editingUniversity, setEditingUniversity] = useState<University | null>(null);
+  const [editingUniversity, setEditingUniversity] = useState<University | null>(
+    null
+  );
   const [universities, setUniversities] = useState<University[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -26,11 +36,12 @@ export function useUniversities() {
         setError(null);
 
         const etablissements = await governmentService.getAllEtablissements();
-        
+
         if (!isMounted) return;
 
         // Mapper les établissements backend vers le format frontend
-        const mappedUniversities = mapEtablissementsToUniversities(etablissements);
+        const mappedUniversities =
+          mapEtablissementsToUniversities(etablissements);
         setUniversities(mappedUniversities);
       } catch (err) {
         if (!isMounted) return;
@@ -125,11 +136,15 @@ export function useUniversities() {
         if (updates.address) updateDto.adresse = updates.address;
         if (updates.filieres) {
           // Extraire les noms des types de documents depuis les filières
-          updateDto.documentTypeNames = updates.filieres.flatMap(f => f.diplomas);
+          updateDto.documentTypeNames = updates.filieres.flatMap(
+            (f) => f.diplomas
+          );
         }
 
-        const updatedEtablissement = await governmentService.updateEtablissement(id, updateDto);
-        const mappedUniversity = mapEtablissementToUniversity(updatedEtablissement);
+        const updatedEtablissement =
+          await governmentService.updateEtablissement(id, updateDto);
+        const mappedUniversity =
+          mapEtablissementToUniversity(updatedEtablissement);
 
         setUniversities((prev) =>
           prev.map((u) => (u.id === id ? mappedUniversity : u))
@@ -161,9 +176,9 @@ export function useUniversities() {
         documentTypeNames = Object.keys(data.documentTypeParcoursNames);
       } else if (data.filieres) {
         // Fallback pour compatibilité avec l'ancien format
-        documentTypeNames = data.filieres.flatMap(f => f.diplomas);
+        documentTypeNames = data.filieres.flatMap((f) => f.diplomas);
       }
-      
+
       const createDto: any = {
         nom: data.name,
         email: data.email,
@@ -174,13 +189,15 @@ export function useUniversities() {
       };
 
       if (data.address) createDto.adresse = data.address;
-      
+
       // Ajouter documentTypeParcoursNames si fourni (NOUVELLE MÉTHODE RECOMMANDÉE)
       if (data.documentTypeParcoursNames) {
         createDto.documentTypeParcoursNames = data.documentTypeParcoursNames;
       }
 
-      const newEtablissement = await governmentService.createEtablissement(createDto);
+      const newEtablissement = await governmentService.createEtablissement(
+        createDto
+      );
       const mappedUniversity = mapEtablissementToUniversity(newEtablissement);
 
       setUniversities((prev) => [...prev, mappedUniversity]);
@@ -219,11 +236,10 @@ export function useUniversities() {
           documentTypeNames: [...new Set(documentTypeNames)], // Éliminer les doublons
         };
 
-        const updatedEtablissement = await governmentService.updateEtablissement(
-          universityId,
-          updateDto
-        );
-        const mappedUniversity = mapEtablissementToUniversity(updatedEtablissement);
+        const updatedEtablissement =
+          await governmentService.updateEtablissement(universityId, updateDto);
+        const mappedUniversity =
+          mapEtablissementToUniversity(updatedEtablissement);
 
         setUniversities((prev) =>
           prev.map((u) => (u.id === universityId ? mappedUniversity : u))
@@ -243,7 +259,9 @@ export function useUniversities() {
         if (!university) throw new Error("Université introuvable");
 
         // Retirer les diplômes de la filière supprimée
-        const filiereToRemove = university.filieres.find((f) => f.id === filiereId);
+        const filiereToRemove = university.filieres.find(
+          (f) => f.id === filiereId
+        );
         if (!filiereToRemove) return;
 
         const documentTypeNames = university.filieres
@@ -254,11 +272,10 @@ export function useUniversities() {
           documentTypeNames: [...new Set(documentTypeNames)],
         };
 
-        const updatedEtablissement = await governmentService.updateEtablissement(
-          universityId,
-          updateDto
-        );
-        const mappedUniversity = mapEtablissementToUniversity(updatedEtablissement);
+        const updatedEtablissement =
+          await governmentService.updateEtablissement(universityId, updateDto);
+        const mappedUniversity =
+          mapEtablissementToUniversity(updatedEtablissement);
 
         setUniversities((prev) =>
           prev.map((u) => (u.id === universityId ? mappedUniversity : u))
@@ -298,7 +315,8 @@ export function useUniversities() {
       try {
         setIsLoading(true);
         const etablissements = await governmentService.getAllEtablissements();
-        const mappedUniversities = mapEtablissementsToUniversities(etablissements);
+        const mappedUniversities =
+          mapEtablissementsToUniversities(etablissements);
         setUniversities(mappedUniversities);
       } catch (err) {
         console.error("Erreur lors du rechargement:", err);
@@ -308,4 +326,3 @@ export function useUniversities() {
     },
   };
 }
-
