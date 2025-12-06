@@ -130,17 +130,21 @@ export default function CreateUniversityModal({
       setSubmitError(null);
 
       // Convertir les IDs en noms pour le backend
-      const documentTypeParcoursNames: { [documentTypeName: string]: string[] } = {};
-      
+      const documentTypeParcoursNames: {
+        [documentTypeName: string]: string[];
+      } = {};
+
       Object.entries(diplomeParcoursMap).forEach(([diplomeId, parcoursIds]) => {
         // Trouver le nom du diplôme
-        const diplomeName = availableDiplomes.find((d) => d.id === diplomeId)?.nom;
-        
+        const diplomeName = availableDiplomes.find(
+          (d) => d.id === diplomeId
+        )?.nom;
+
         // Convertir les IDs de parcours en noms
         const parcoursNames = parcoursIds
           .map((pId) => availableParcours.find((p) => p.id === pId)?.nom)
           .filter((name): name is string => name !== undefined);
-        
+
         if (diplomeName && parcoursNames.length > 0) {
           documentTypeParcoursNames[diplomeName] = parcoursNames;
         }
