@@ -87,6 +87,7 @@ export const API_ENDPOINTS = {
       GET_BY_ID: (id: string) => `/ministere/etablissements/${id}`,
       CREATE: "/ministere/etablissements",
       UPDATE: (id: string) => `/ministere/etablissements/${id}`,
+      IMPORT: "/ministere/etablissements/import",
     },
     // Ministère - Parcours
     PARCOURS: {

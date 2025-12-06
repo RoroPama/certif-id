@@ -9,4 +9,10 @@ export {
   governmentDashboardService,
   GovernmentDashboardService,
 } from "./government-dashboard.service";
+export {
+  governmentService,
+  GovernmentService,
+  type ImportEtablissementsResult,
+  type ImportEtablissementRow,
+} from "./government.service";
 
