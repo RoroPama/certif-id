@@ -106,4 +106,3 @@ export interface UniversityFormData {
     [documentTypeName: string]: string[]; // Noms des parcours
   };
 }
-
